@@ -1,0 +1,16 @@
+.idea/
+web/node_modules/
+web/.idea
+web/.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.tsbuildinfo
+*.txt
+*.env
+*.bat
+*.exe
+bin
