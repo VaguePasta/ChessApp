@@ -3,6 +3,7 @@ web/node_modules/
 web/.idea
 web/.vscode
 .idea
+node_modules
 *.suo
 *.ntvs*
 *.njsproj
