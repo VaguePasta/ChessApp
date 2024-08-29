@@ -1,7 +1,8 @@
 import express = require('express')
-import {GameMap} from "./game/board";
+import {ClearBit, GameMap, PrintBoard, RightShift, SetBit} from "./game/board";
 import {GenerateRandomToken} from "./auth/token";
 import {NewGame} from "./game/game";
+import {GeneratePawnAttackTables, PawnAttackTable} from "./game/pawn";
 const app = express()
 app.use([
     express.text({
@@ -27,6 +28,10 @@ app.post('/end', (req, res) => {
         res.status(404).end()
     }
 })
+function main() {
+    GeneratePawnAttackTables()
+}
 app.listen(8080,() => {
+    main()
     console.log('Server started. Listening on 8080.')
 })

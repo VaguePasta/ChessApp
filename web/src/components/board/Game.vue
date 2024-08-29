@@ -3,7 +3,6 @@
   import {ref} from "vue";
   import {ParseFEN} from "./FEN.ts";
   import {PopulateOccupiedBoards} from "./Bitboards.ts";
-  import {IndexToAlgebraic} from "./Notation.ts";
   const side = defineProps(['side'])
   let selectingPiece = ref(0)
   const pieces: any = ref(ParseFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"));
@@ -37,28 +36,26 @@
   }
   function MovePiece(event: any) {
     if (selectingPiece.value !== 0) {
-      // console.log("Moved from: " + IndexToAlgebraic(pieces.value.get(selectingPiece.value).PieceInfos[1] & 0b00111111))
       let rec = event.target.getBoundingClientRect()
-      let index = Math.floor(event.offsetX/rec.width/0.125) + Math.floor(event.offsetY/rec.height/0.125) * 8
-      if (side.side === 0b10) index = 63 - index
+      let index = BigInt(Math.floor(event.offsetX/rec.width/0.125) + Math.floor(event.offsetY/rec.height/0.125) * 8)
+      if (side.side === 0b10) index = 63n - index
       const opponentSide = side.side === 0b01 ? 1 : 0
       if (MoveIsLegal()) {
-        occupiedBoard.value[1 - opponentSide] = occupiedBoard.value[1 - opponentSide] ^ (BigInt(1) << BigInt(pieces.value.get(selectingPiece.value).PieceInfos[1] & 0b00111111))
-        occupiedBoard.value[1 - opponentSide] = occupiedBoard.value[1 - opponentSide] ^ BigInt(1 << index)
-        if ((occupiedBoard.value[opponentSide] >> BigInt(index)) % BigInt(2) !== BigInt(0)) {
-          occupiedBoard.value[opponentSide] = occupiedBoard.value[opponentSide] ^ BigInt(1 << index)
+        occupiedBoard.value[1 - opponentSide] = occupiedBoard.value[1 - opponentSide] ^ (1n << BigInt(pieces.value.get(selectingPiece.value).PieceInfos[1] & 0b00111111))
+        occupiedBoard.value[1 - opponentSide] = occupiedBoard.value[1 - opponentSide] ^ (1n << index)
+        if ((occupiedBoard.value[opponentSide] >> BigInt(index)) % 2n !== 0n) {
+          occupiedBoard.value[opponentSide] = occupiedBoard.value[opponentSide] ^ (1n << index)
           for (let [, value] of pieces.value) {
-            if ((value.PieceInfos[1] & 0b00111111) === index) {
+            if (BigInt(value.PieceInfos[1] & 0b00111111) === index) {
               pieces.value.delete(value.PieceInfos[0])
               break
             }
           }
         }
-        pieces.value.get(selectingPiece.value).PieceInfos[1] = index
+        pieces.value.get(selectingPiece.value).PieceInfos[1] = Number(index)
       }
       pieces.value.get(selectingPiece.value).Selected = false
       selectingPiece.value = 0
-      // console.log("Moved to: ", IndexToAlgebraic(index))
     }
   }
 </script>
