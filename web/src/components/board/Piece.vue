@@ -1,10 +1,11 @@
-<script setup>
-  const props = defineProps(['information'])
-  let coordinates = props.information.PieceInfos[1] & 0b00111111
-  let xCoordinate = coordinates % 8
-  let yCoordinate = Math.floor(coordinates / 8)
+<script setup lang="ts">
+  import {ref, watch} from "vue";
+  const props = defineProps(['side','information', 'key'])
+  const oldPos = ref(props.information.PieceInfos[1])
+  const oldLeft = ref(props.side === 0b01 ? ((((props.information.PieceInfos[1] & 0b00111111) % 8) * 12.5).toString() + '%') : ((Math.floor((props.information.PieceInfos[1] & 0b00111111) / 8) * 12.5).toString() + '%'))
+  const oldTop = ref(props.side === 0b01 ? ((Math.floor((props.information.PieceInfos[1] & 0b00111111) / 8) * 12.5).toString() + '%') : ((87.5 - ((props.information.PieceInfos[1] & 0b00111111) % 8) * 12.5).toString() + '%'))
   let styleClass = "";
-  switch (props.information.PieceInfos[0]) {
+  switch (props.information.PieceInfos[0] & 0b00011111) {
     case 0b01010:
       styleClass = 'WhitePawn'
       break
@@ -42,15 +43,37 @@
       styleClass = 'BlackKing'
       break
   }
+  watch(props.information, (newPosition) => {
+    if (oldPos.value === newPosition.PieceInfos[1]) return
+    if (props.side === 0b01) {
+      oldLeft.value = (((oldPos.value & 0b00111111) % 8) * 12.5).toString() + '%'
+      oldTop.value = (Math.floor((oldPos.value & 0b00111111) / 8) * 12.5).toString() + '%'
+    }
+    else {
+      oldLeft.value = (87.5 - ((oldPos.value & 0b00111111) % 8) * 12.5).toString() + '%'
+      oldTop.value = (87.5 - ((oldPos.value & 0b00111111) % 8) * 12.5).toString() + '%'
+    }
+    oldPos.value = newPosition.PieceInfos[1]
+  })
 </script>
 
 <template>
-  <div class="Piece"
-  :class="[styleClass]"
-  :style="{'left': xCoordinate * 12.5 + '%', 'top': yCoordinate * 12.5 + '%'}"/>
+  <div class="Piece" @click="$emit('selecting-piece', $event, props.information.PieceInfos[0])"
+       :key="oldPos"
+  :class="[styleClass,
+   props.information.Selected ? 'Selected' : '', (props.side !== (props.information.PieceInfos[0] >> 3 & 0b00000011)) ? 'Opponent' : '']"
+  :style="[ props.side === 0b01 ?
+      {'left': ((props.information.PieceInfos[1] & 0b00111111) % 8) * 12.5 + '%', 'top': Math.floor((props.information.PieceInfos[1] & 0b00111111) / 8) * 12.5 + '%'} :
+      {'left': 87.5 - ((props.information.PieceInfos[1] & 0b00111111) % 8) * 12.5 + '%', 'top': 87.5 - Math.floor((props.information.PieceInfos[1] & 0b00111111) / 8) * 12.5 + '%'}]"/>
 </template>
 
 <style scoped>
+@keyframes Move {
+  from {
+    left: v-bind(oldLeft);
+    top: v-bind(oldTop);
+  }
+}
 .Piece {
   background-repeat: no-repeat;
   background-position: center;
@@ -60,6 +83,14 @@
   position: absolute;
   display: inline-block;
   margin: 0;
+  animation: Move 0.2s;
+}
+
+.Opponent {
+  pointer-events: none;
+}
+.Selected {
+  background-color: #648b5e;
 }
 .BlackPawn {
   background-image: url("@/assets/board/black_pawn.svg");
