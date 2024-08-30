@@ -1,4 +1,5 @@
-import {RightShift} from "./board";
+import {RightShift} from "../board";
+import {NotAFile, NotHFile} from "./consts";
 
 export const PawnAttackTable: Array<BigUint64Array> = Array.from(Array(2), () => new BigUint64Array(64))
 export function GeneratePawnAttackTables() {
@@ -8,8 +9,6 @@ export function GeneratePawnAttackTables() {
     }
 }
 function MaskPawnAttack(side: number, index: bigint): bigint {
-    const NotAFile: bigint = 0xFEFEFEFEFEFEFEFEn
-    const NotHFile: bigint = 0x7F7F7F7F7F7F7F7Fn
     let attackBoard: bigint = 0n
     let pieceBoard: bigint = 1n << index
     if (!side) {

@@ -1,8 +1,7 @@
 import express = require('express')
-import {ClearBit, GameMap, PrintBoard, RightShift, SetBit} from "./game/board";
+import {GameMap} from "./game/board";
 import {GenerateRandomToken} from "./auth/token";
 import {NewGame} from "./game/game";
-import {GeneratePawnAttackTables, PawnAttackTable} from "./game/pawn";
 const app = express()
 app.use([
     express.text({
@@ -29,7 +28,7 @@ app.post('/end', (req, res) => {
     }
 })
 function main() {
-    GeneratePawnAttackTables()
+
 }
 app.listen(8080,() => {
     main()
