@@ -1,4 +1,4 @@
-import {AlgebraicToIndex, PrintBoard, RightShift} from "../board";
+import {RightShift} from "../bitboard/bit_operations";
 import {NotAFile, NotHFile} from "./consts";
 
 export const KingAttackTables: BigUint64Array = new BigUint64Array(64)

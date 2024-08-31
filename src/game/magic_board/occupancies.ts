@@ -1,4 +1,4 @@
-import {ClearBit, CountSetBit, LeastSignificantOneIndex, RightShift} from "../board";
+import {ClearBit, CountSetBit, LeastSignificantOneIndex, RightShift} from "../bitboard/bit_operations";
 import {GenerateBishopAttacks, MaskBishopAttacks} from "../pieces/bishop";
 import {GenerateRookAttacks, MaskRookAttacks} from "../pieces/rook";
 import crypto = require('crypto')

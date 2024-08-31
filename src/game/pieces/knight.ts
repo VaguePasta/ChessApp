@@ -1,5 +1,5 @@
 import {NotABFile, NotAFile, NotGHFile, NotHFile} from "./consts";
-import {AlgebraicToIndex, IndexToAlgebraic, PrintBoard, RightShift} from "../board";
+import {RightShift} from "../bitboard/bit_operations";
 
 export const KnightAttackTables: BigUint64Array = new BigUint64Array(64)
 export function GenerateKnightAttackTables() {
