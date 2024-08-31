@@ -14,4 +14,5 @@ export enum CastlingRights {
     BlackQueen = 8
 }
 export enum Pieces {P, N, B, R, Q, K, p, n, b, r, q, k}
+export const PieceName = "PNBRQKpnbrqk"
 export const PieceSymbols: string = "♟♞♝♜♛♚♙♘♗♖♕♔"

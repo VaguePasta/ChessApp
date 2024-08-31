@@ -1,28 +1,28 @@
-import {ClearBit, LeastSignificantOneIndex, PrintBoard, RightShift} from "../bitboard/bit_operations";
+import {ClearBit, LeastSignificantOneIndex, RightShift} from "../bitboard/bit_operations";
 import {IndexToAlgebraic} from "../bitboard/conversions";
-import {Side} from "../bitboard/bit_boards";
-import {IncrementLegalMoves} from "./movegen";
+import {Pieces, Side} from "../bitboard/bit_boards";
+import {AddMove, MakeMove, MoveFlags, MoveList} from "./move";
 
-export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: number) {
+export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: number, moveList: MoveList) {
     if (side === Side.white) {
         let whiteSingle = WhiteSinglePush(pawnBoard, empty)
         let whiteDouble = WhiteDoublePush(pawnBoard, empty)
         while (whiteSingle) {
             let leastSingle = LeastSignificantOneIndex(whiteSingle)
             if (leastSingle <= 7n) {
-                console.log(IndexToAlgebraic(leastSingle + 8n) + IndexToAlgebraic(leastSingle))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.knight_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.bishop_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.rook_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.queen_promotion, side ? Pieces.p : Pieces.P))
             }
             else {
-                console.log(IndexToAlgebraic(leastSingle + 8n) + IndexToAlgebraic(leastSingle))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.quiet_moves, side ? Pieces.p : Pieces.P))
             }
             whiteSingle = ClearBit(whiteSingle, leastSingle)
         }
         while (whiteDouble) {
             let leastDouble = LeastSignificantOneIndex(whiteDouble)
-            console.log(IndexToAlgebraic(leastDouble + 16n) + IndexToAlgebraic(leastDouble))
-            IncrementLegalMoves()
+            AddMove(moveList, MakeMove(Number(leastDouble + 16n), Number(leastDouble), MoveFlags.double_push, side ? Pieces.p : Pieces.P))
             whiteDouble = ClearBit(whiteDouble, leastDouble)
         }
     }
@@ -32,19 +32,19 @@ export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: numbe
         while (blackSingle) {
             let leastSingle = LeastSignificantOneIndex(blackSingle)
             if (leastSingle >= 56n) {
-                console.log(IndexToAlgebraic(leastSingle - 8n) + IndexToAlgebraic(leastSingle))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.knight_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.bishop_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.rook_promotion, side ? Pieces.p : Pieces.P))
+                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.queen_promotion, side ? Pieces.p : Pieces.P))
             }
             else {
-                console.log(IndexToAlgebraic(leastSingle - 8n) + IndexToAlgebraic(leastSingle))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.quiet_moves, side ? Pieces.p : Pieces.P))
             }
             blackSingle = ClearBit(blackSingle, leastSingle)
         }
         while (blackDouble) {
             let leastDouble = LeastSignificantOneIndex(blackDouble)
-            console.log(IndexToAlgebraic(leastDouble - 16n) + IndexToAlgebraic(leastDouble))
-            IncrementLegalMoves()
+            AddMove(moveList, MakeMove(Number(leastDouble - 16n), Number(leastDouble), MoveFlags.double_push, side ? Pieces.p : Pieces.P))
             blackDouble = ClearBit(blackDouble, leastDouble)
         }
     }

@@ -1,19 +1,16 @@
-import {CastlingRights, Side} from "../bitboard/bit_boards";
+import {CastlingRights, Pieces, Side} from "../bitboard/bit_boards";
 import {KingsideBlack, KingsideWhite, QueensideBlack, QueensideWhite} from "../pieces/consts";
 import {IsSquareAttacked} from "./attacks";
-import {Game} from "../game";
-import {IndexToAlgebraic} from "../bitboard/conversions";
-import {IncrementLegalMoves} from "./movegen";
+import {AddMove, MakeMove, MoveFlags, MoveList} from "./move";
 
-export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Array, occupancy: BigUint64Array, side: number) {
+export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Array, occupancy: BigUint64Array, side: number, moveList: MoveList) {
     if (!side) {
         if (IsSquareAttacked(pieceBoards, occupancy, 60, Side.black)) return
         if (castlingRights & CastlingRights.WhiteKing) {
             if (!(occupancy[Side.both] & KingsideWhite)) {
                 if (!IsSquareAttacked(pieceBoards, occupancy, 61, Side.black) &&
                         !IsSquareAttacked(pieceBoards, occupancy, 62, Side.black)) {
-                    console.log("Castle white king to g1")
-                    IncrementLegalMoves()
+                    AddMove(moveList, MakeMove(60, 62, MoveFlags.king_castle, side ? Pieces.k : Pieces.K))
                 }
             }
         }
@@ -22,8 +19,7 @@ export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Arra
                 if (!IsSquareAttacked(pieceBoards, occupancy, 57, Side.black) &&
                         !IsSquareAttacked(pieceBoards, occupancy, 58, Side.black) &&
                             !IsSquareAttacked(pieceBoards, occupancy, 59, Side.black)) {
-                    console.log("Castle white king to c1")
-                    IncrementLegalMoves()
+                    AddMove(moveList, MakeMove(60, 58, MoveFlags.queen_castle, side ? Pieces.k : Pieces.K))
                 }
             }
         }
@@ -34,8 +30,7 @@ export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Arra
             if (!(occupancy[Side.both] & KingsideBlack)) {
                 if (!IsSquareAttacked(pieceBoards, occupancy, 5, Side.white) &&
                     !IsSquareAttacked(pieceBoards, occupancy, 6, Side.white)) {
-                    console.log("Castle black king to g8")
-                    IncrementLegalMoves()
+                    AddMove(moveList, MakeMove(4, 6, MoveFlags.king_castle, side ? Pieces.k : Pieces.K))
                 }
             }
         }
@@ -44,8 +39,7 @@ export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Arra
                 if (!IsSquareAttacked(pieceBoards, occupancy, 1, Side.white) &&
                     !IsSquareAttacked(pieceBoards, occupancy, 2, Side.white) &&
                     !IsSquareAttacked(pieceBoards, occupancy, 3, Side.white)) {
-                    console.log("Castle black king to c8")
-                    IncrementLegalMoves()
+                    AddMove(moveList, MakeMove(4, 2, MoveFlags.queen_castle, side ? Pieces.k : Pieces.K))
                 }
             }
         }

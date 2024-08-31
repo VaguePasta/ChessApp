@@ -21,9 +21,7 @@ export function IsSquareAttacked(pieceBoards: BigUint64Array, occupancyBoards: B
         if (GetBishopAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.b] | pieceBoards[Pieces.q])) return true
         if (GetRookAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.r] | pieceBoards[Pieces.q])) return true
         if (KnightAttackTables[index] & pieceBoards[Pieces.n]) return true
-        if (PawnAttackTables[Side.white][index] & pieceBoards[Pieces.P]) {
-            return true
-        }
+        if (PawnAttackTables[Side.white][index] & pieceBoards[Pieces.p]) return true
         if (KingAttackTables[index] & pieceBoards[Pieces.k]) return true
     }
     return false

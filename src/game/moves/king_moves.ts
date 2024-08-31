@@ -2,21 +2,20 @@ import {ClearBit, GetBit, LeastSignificantOneIndex} from "../bitboard/bit_operat
 import {KnightAttackTables} from "../pieces/knight";
 import {IndexToAlgebraic} from "../bitboard/conversions";
 import {KingAttackTables} from "../pieces/king";
-import {IncrementLegalMoves} from "./movegen";
+import {AddMove, MakeMove, MoveFlags, MoveList} from "./move";
+import {Pieces} from "../bitboard/bit_boards";
 
-export function GenerateKingMoves(kingBoard: bigint, allyOccupancy: bigint, opponentOccupancy: bigint) {
+export function GenerateKingMoves(kingBoard: bigint, allyOccupancy: bigint, opponentOccupancy: bigint, side: number, moveList: MoveList) {
     while (kingBoard) {
         let source = LeastSignificantOneIndex(kingBoard)
         let attackBoard = KingAttackTables[Number(source)] & ~allyOccupancy
         while (attackBoard) {
             let target = LeastSignificantOneIndex(attackBoard)
             if (!GetBit(opponentOccupancy, target)) {
-                console.log(IndexToAlgebraic(source) + IndexToAlgebraic(target))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.quiet_moves, side ? Pieces.k : Pieces.K))
             }
             else {
-                console.log(IndexToAlgebraic(source) + IndexToAlgebraic(target))
-                IncrementLegalMoves()
+                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.capture, side ? Pieces.k : Pieces.K))
             }
             attackBoard = ClearBit(attackBoard, target)
         }
