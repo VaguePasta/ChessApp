@@ -1,7 +1,7 @@
-import {GetBit} from "../bitboard/bit_operations";
+import {LeastSignificantOneIndex} from "../bitboard/bit_operations";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {PawnAttackTables} from "../pieces/pawn";
-import {Game} from "../game";
+import {GameInfo} from "../engine/game";
 import {KnightAttackTables} from "../pieces/knight";
 import {GetBishopAttacks} from "../pieces/bishop";
 import {GetRookAttacks} from "../pieces/rook";
@@ -12,12 +12,10 @@ export function IsSquareAttacked(pieceBoards: BigUint64Array, occupancyBoards: B
         if (GetBishopAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.B] | pieceBoards[Pieces.Q])) return true
         if (GetRookAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.R] | pieceBoards[Pieces.Q])) return true
         if (KnightAttackTables[index] & pieceBoards[Pieces.N]) return true
-        if (PawnAttackTables[Side.black][index] & pieceBoards[Pieces.P]) {
-            return true
-        }
+        if (PawnAttackTables[Side.black][index] & pieceBoards[Pieces.P]) return true
         if (KingAttackTables[index] & pieceBoards[Pieces.K]) return true
     }
-    else if (attackedBy === Side.black) {
+    else {
         if (GetBishopAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.b] | pieceBoards[Pieces.q])) return true
         if (GetRookAttacks(BigInt(index), occupancyBoards[Side.both]) & (pieceBoards[Pieces.r] | pieceBoards[Pieces.q])) return true
         if (KnightAttackTables[index] & pieceBoards[Pieces.n]) return true
@@ -26,7 +24,7 @@ export function IsSquareAttacked(pieceBoards: BigUint64Array, occupancyBoards: B
     }
     return false
 }
-export function PrintAttackedSquare(game: Game, side: number) {
+export function PrintAttackedSquare(game: GameInfo, side: number) {
     let board: string = ""
     board += "    a b c d e f g h\n"
     for (let rank = 0; rank < 8; rank++) {
@@ -37,4 +35,9 @@ export function PrintAttackedSquare(game: Game, side: number) {
         board += "\n"
     }
     console.log(board)
+}
+export function IsKingInCheck(game: GameInfo): boolean {
+    let kingBoard = game.SideToMove ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
+    let kingIndex = Number(LeastSignificantOneIndex(kingBoard))
+    return IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, game.SideToMove);
 }

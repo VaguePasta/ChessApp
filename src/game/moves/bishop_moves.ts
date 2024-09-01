@@ -1,7 +1,6 @@
 import {ClearBit, GetBit, LeastSignificantOneIndex} from "../bitboard/bit_operations";
-import {IndexToAlgebraic} from "../bitboard/conversions";
 import {GetBishopAttacks} from "../pieces/bishop";
-import {Pieces, Side} from "../bitboard/bit_boards";
+import {Side} from "../bitboard/bit_boards";
 import {AddMove, MakeMove, MoveFlags, MoveList} from "./move";
 
 export function GenerateBishopMoves(bishopBoard: bigint, occupancy: BigUint64Array, side: number, moveList: MoveList) {
@@ -11,10 +10,10 @@ export function GenerateBishopMoves(bishopBoard: bigint, occupancy: BigUint64Arr
         while (attackBoard) {
             let target = LeastSignificantOneIndex(attackBoard)
             if (!GetBit(occupancy[1 - side], target)) {
-                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.quiet_moves, side ? Pieces.b : Pieces.B))
+                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.quiet_moves))
             }
             else {
-                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.capture, side ? Pieces.b : Pieces.B))
+                AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.capture))
             }
             attackBoard = ClearBit(attackBoard, target)
         }
