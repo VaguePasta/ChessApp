@@ -26,18 +26,18 @@ export function IsSquareAttacked(pieceBoards: BigUint64Array, occupancyBoards: B
 }
 export function PrintAttackedSquare(game: GameInfo, side: number) {
     let board: string = ""
-    board += "    a b c d e f g h\n"
+    board += "    a  b  c  d  e  f  g  h\n"
     for (let rank = 0; rank < 8; rank++) {
         board += (8 - rank) + "   "
         for (let file = 0; file < 8; file++) {
-            board += (IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, rank * 8 + file,side) ? "1" : "0") + " "
+            board += (IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, rank * 8 + file,side) ? "1" : "0") + "  "
         }
         board += "\n"
     }
     console.log(board)
 }
-export function IsKingInCheck(game: GameInfo): boolean {
-    let kingBoard = game.SideToMove ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
+export function IsKingInCheck(game: GameInfo, checkedBy: number): boolean {
+    let kingBoard = checkedBy ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
     let kingIndex = Number(LeastSignificantOneIndex(kingBoard))
-    return IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, game.SideToMove);
+    return IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, checkedBy);
 }

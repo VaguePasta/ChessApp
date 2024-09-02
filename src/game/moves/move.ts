@@ -1,10 +1,10 @@
 import {IndexToAlgebraic} from "../bitboard/conversions";
 import {CastlingRights, PieceName, Pieces, Side} from "../bitboard/bit_boards";
-import {GameInfo} from "../engine/game";
+import {GameInfo, PrintGameState} from "../engine/game";
 import {
     ClearBit,
     CountSetBit,
-    LeastSignificantOneIndex,
+    LeastSignificantOneIndex, PrintBoard,
     RightShift,
     SetBit
 } from "../bitboard/bit_operations";
@@ -96,7 +96,7 @@ export function MovePromotion(move: number, side: number): number {
         return side ? Pieces.r : Pieces.R
     }
     if (flag === MoveFlags.knight_promotion || flag === MoveFlags.knight_promo_capture) {
-        return side ? Pieces.k : Pieces.K
+        return side ? Pieces.n : Pieces.N
     }
     if (flag === MoveFlags.queen_promotion || flag === MoveFlags.queen_promo_capture) {
         return side ? Pieces.q : Pieces.Q
@@ -109,16 +109,30 @@ function IsCastling(move: number): number {
     else if (flag === MoveFlags.queen_castle) return -1
     return 0
 }
-export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList, LegalMoves: MoveList) {
+export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList): MoveList {
+    let LegalMoves = {
+        count: 0,
+        moves: new Uint16Array(218)
+    }
     let GameCopy: GameInfo = structuredClone(game)
     let movePiece
     let move
-    LegalMoves.count = 0
-    for (let i = 0; i < pseudoLegalMoves.count; i++) {
+    if (IsKingInCheck(game, 1 - game.SideToMove)) {
+        for (let i = 0; i < pseudoLegalMoves.count; i++) {
+            move = pseudoLegalMoves.moves[i]
+            game = ExecuteMove(game, move)
+            if (!IsKingInCheck(game, game.SideToMove)) {
+                LegalMoves.moves[LegalMoves.count] = move
+                LegalMoves.count++
+            }
+            game = structuredClone(GameCopy)
+        }
+    }
+    else for (let i = 0; i < pseudoLegalMoves.count; i++) {
         move = pseudoLegalMoves.moves[i]
         if (GetMoveFlag(move) === MoveFlags.ep_capture) {
-            ExecuteMove(game, move)
-            if (!IsKingInCheck(game)) {
+            game = ExecuteMove(game, move)
+            if (!IsKingInCheck(game, game.SideToMove)) {
                 LegalMoves.moves[LegalMoves.count] = move
                 LegalMoves.count++
             }
@@ -127,8 +141,8 @@ export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList, LegalMoves:
         }
         movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
         if (movePiece == Pieces.k || movePiece === Pieces.K) {
-            ExecuteMove(game, move)
-            if (!IsKingInCheck(game)) {
+            game = ExecuteMove(game, move)
+            if (!IsKingInCheck(game, game.SideToMove)) {
                 LegalMoves.moves[LegalMoves.count] = move
                 LegalMoves.count++
             }
@@ -146,24 +160,17 @@ export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList, LegalMoves:
             LegalMoves.moves[LegalMoves.count] = move
             LegalMoves.count++
         }
+    //     game = ExecuteMove(game, move)
+    //     if (!IsKingInCheck(game)) {
+    //         LegalMoves.moves[LegalMoves.count] = move
+    //         LegalMoves.count++
+    //     }
+    //     game = structuredClone(GameCopy)
     }
+    return LegalMoves
 }
-export function UpdatePinnedPieces(game: GameInfo) {
-    let kingIndex = LeastSignificantOneIndex(game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K])
-    let attack_map = (GetRookAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.R : Pieces.r] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
-                | (GetBishopAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.B : Pieces.b] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
-    let pinned_map: bigint = 0n
-    while(attack_map) {
-        let sniper = LeastSignificantOneIndex(attack_map)
-        let intersection = LinesBetween[Number(sniper)][Number(kingIndex)] & game.OccupancyBoards[game.SideToMove]
-        if (CountSetBit(intersection) === 1n) {
-            pinned_map |= intersection
-        }
-        attack_map = ClearBit(attack_map, sniper)
-    }
-    game.PinnedBoards[game.SideToMove] = pinned_map
-}
-export function ExecuteMove(game: GameInfo, move: number) {
+export function ExecuteMove(gameInfo: GameInfo, move: number): GameInfo {
+    let game = structuredClone(gameInfo)
     let flag = GetMoveFlag(move)
     let source = BigInt(GetMoveSource(move))
     let target = BigInt(GetMoveTarget(move))
@@ -207,7 +214,6 @@ export function ExecuteMove(game: GameInfo, move: number) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackQueen
         }
     }
-
     let targetPiece
     switch (flag) {
         case MoveFlags.quiet_moves:
@@ -245,6 +251,7 @@ export function ExecuteMove(game: GameInfo, move: number) {
                 game.OccupancyBoards[Side.white] = ClearBit(game.OccupancyBoards[Side.white], 60n)
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 58n)
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 59n)
+                game.CastlingRight = game.CastlingRight & 0b1100
             }
             else {
                 game.PieceBitboards[Pieces.r] = ClearBit(game.PieceBitboards[Pieces.r], 0n)
@@ -253,6 +260,7 @@ export function ExecuteMove(game: GameInfo, move: number) {
                 game.OccupancyBoards[Side.black] = ClearBit(game.OccupancyBoards[Side.black], 4n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 2n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 3n)
+                game.CastlingRight = game.CastlingRight & 0b0011
             }
             game.HalfMoves++
             break
@@ -274,7 +282,7 @@ export function ExecuteMove(game: GameInfo, move: number) {
                 game.OccupancyBoards[Side.black] = ClearBit(game.OccupancyBoards[Side.black], 4n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 5n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 6n)
-                game.CastlingRight = game.CastlingRight & 0b1100
+                game.CastlingRight = game.CastlingRight & 0b0011
             }
             game.HalfMoves++
             break
@@ -286,7 +294,7 @@ export function ExecuteMove(game: GameInfo, move: number) {
             let targetPosition = game.SideToMove ? target - 8n : target + 8n
             let targetPawn = game.SideToMove ? Pieces.P : Pieces.p
             game.PieceBitboards[targetPawn] = ClearBit(game.PieceBitboards[targetPawn], targetPosition)
-            game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[game.SideToMove], targetPosition)
+            game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], targetPosition)
             game.HalfMoves = 0
             break
         case MoveFlags.knight_promotion:
@@ -368,25 +376,39 @@ export function ExecuteMove(game: GameInfo, move: number) {
     }
     game.OccupancyBoards[Side.both] = (game.OccupancyBoards[Side.white] | game.OccupancyBoards[Side.black])
     game.SideToMove = 1 - game.SideToMove
-    UpdatePinnedPieces(game)
+    let kingIndex = LeastSignificantOneIndex(game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K])
+    let attack_map = (GetRookAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.R : Pieces.r] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
+        | (GetBishopAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.B : Pieces.b] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
+    let pinned_map: bigint = 0n
+    while(attack_map) {
+        let sniper = LeastSignificantOneIndex(attack_map)
+        let intersection = LinesBetween[Number(sniper)][Number(kingIndex)] & game.OccupancyBoards[game.SideToMove]
+        if (CountSetBit(intersection) === 1n) {
+            pinned_map |= intersection
+        }
+        attack_map = ClearBit(attack_map, sniper)
+    }
+    game.PinnedBoards[game.SideToMove] = pinned_map
+    return game
 }
 
-export function PrintMove(move: number, side: number, pieceBoards: BigUint64Array) {
+export function PrintMove(move: number, side: number) {
+                          //, side: number, pieceBoards: BigUint64Array) {
     let moveString: string = ""
-    if (IsCastling(move) === 1) {
-        moveString += "0-0"
-    }
-    else if (IsCastling(move) === -1) {
-        moveString += "0-0-0"
-    }
-    else {
+    // if (IsCastling(move) === 1) {
+    //     moveString += "0-0"
+    // }
+    // else if (IsCastling(move) === -1) {
+    //     moveString += "0-0-0"
+    // }
+    // else {
         let promotion = MovePromotion(move, side)
-        moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards, side))
+    //     moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards, side))
         moveString += IndexToAlgebraic(BigInt(GetMoveSource(move)))
-        if (MoveCapture(move)) moveString += "x"
+        // if (MoveCapture(move)) moveString += "x"
         moveString += IndexToAlgebraic(BigInt(GetMoveTarget(move)))
         if (promotion !== 0) moveString += PieceName.charAt(promotion)
-        if (((move & MoveFlagsMask) >>> 12) == 5) moveString += "e.p"
-    }
-    console.log(moveString)
+        // if (((move & MoveFlagsMask) >>> 12) == 5) moveString += "e.p"
+    // }
+    return moveString
 }

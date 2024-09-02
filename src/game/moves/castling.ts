@@ -16,8 +16,7 @@ export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Arra
         }
         if (castlingRights & CastlingRights.WhiteQueen) {
             if (!(occupancy[Side.both] & QueensideWhite)) {
-                if (!IsSquareAttacked(pieceBoards, occupancy, 57, Side.black) &&
-                        !IsSquareAttacked(pieceBoards, occupancy, 58, Side.black) &&
+                if (!IsSquareAttacked(pieceBoards, occupancy, 58, Side.black) &&
                             !IsSquareAttacked(pieceBoards, occupancy, 59, Side.black)) {
                     AddMove(moveList, MakeMove(60, 58, MoveFlags.queen_castle))
                 }
@@ -36,8 +35,7 @@ export function CastlingMoves(castlingRights: number, pieceBoards: BigUint64Arra
         }
         if (castlingRights & CastlingRights.BlackQueen) {
             if (!(occupancy[Side.both] & QueensideBlack)) {
-                if (!IsSquareAttacked(pieceBoards, occupancy, 1, Side.white) &&
-                    !IsSquareAttacked(pieceBoards, occupancy, 2, Side.white) &&
+                if (!IsSquareAttacked(pieceBoards, occupancy, 2, Side.white) &&
                     !IsSquareAttacked(pieceBoards, occupancy, 3, Side.white)) {
                     AddMove(moveList, MakeMove(4, 2, MoveFlags.queen_castle))
                 }

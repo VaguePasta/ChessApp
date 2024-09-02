@@ -15,7 +15,7 @@ export const RookRelevancyBitCounts: Uint8Array = new Uint8Array([
 export const RookAttackMask: BigUint64Array = new BigUint64Array(64)
 export const RookAttackTables: Array<BigUint64Array> = Array.from(Array(64), () => new BigUint64Array(4096))
 export function GenerateRookAttackTables() {
-    for (let i = 0n; i < 64; i++) {
+    for (let i = 0n; i < 64n; i++) {
         RookAttackMask[Number(i)] = MaskRookAttacks(i)
         let relevantBitcounts = CountSetBit(RookAttackMask[Number(i)])
         let occupancyIndices = (1n << relevantBitcounts)

@@ -15,10 +15,6 @@ export function GenerateMoves(game: GameInfo): MoveList {
         count: 0,
         moves: new Uint16Array(218)
     }
-    let LegalMoveList = {
-        count: 0,
-        moves: new Uint16Array(218)
-    }
     if (side == Side.white) {
         for (let piece = 0; piece <= 5; piece++) {
             pieceBoard = game.PieceBitboards[piece]
@@ -71,6 +67,5 @@ export function GenerateMoves(game: GameInfo): MoveList {
             }
         }
     }
-    TryMoves(game, PseudoLegalMoveList, LegalMoveList)
-    return LegalMoveList
+    return TryMoves(game, PseudoLegalMoveList)
 }

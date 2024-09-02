@@ -6,15 +6,17 @@ import {GenerateKingAttackTables} from "./game/pieces/king";
 import {GeneratePawnAttackTables} from "./game/pieces/pawn";
 import {GenerateKnightAttackTables} from "./game/pieces/knight";
 import {GenerateLineBetween, LinesBetween} from "./game/bitboard/consts";
+import {Divide, Perft} from "./game/engine/perft";
+import {ExecuteMove, GetMoveFlag, GetMoveSource, GetMoveTarget, MoveFlags, PrintMove} from "./game/moves/move";
 import {GenerateMoves} from "./game/moves/movegen";
-import {PrintMove} from "./game/moves/move";
-import {Perft} from "./game/engine/perft";
+import {PrintBoard} from "./game/bitboard/bit_operations";
+import {Pieces, Side} from "./game/bitboard/bit_boards";
 if (require.main === module) {
     main();
 }
 function main() {
     const game: Game = NewGame()
-    if (ParseFEN(game.GameInfo, FENStart)) {
+    if (ParseFEN(game.GameInfo, "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")) {
         console.log("Invalid FEN.")
     }
     else {
@@ -24,17 +26,15 @@ function main() {
         GenerateBishopAttackTables()
         GenerateRookAttackTables()
         GenerateLineBetween()
-        console.log("Nodes: " + Perft(game.GameInfo, 4))
-        // PrintGameState(game.GameInfo)
-        // performance.mark('A')
-        // game.LegalMoveList = GenerateMoves(game.GameInfo)
-        // performance.mark('B')
-        // performance.measure('movegen', 'A', 'B')
-        // for (let i = 0; i < game.LegalMoveList.count; i++) {
-        //     PrintMove(game.LegalMoveList.moves[i], game.GameInfo.SideToMove, game.GameInfo.PieceBitboards)
-        // }
-        // const measure = performance.getEntriesByName('movegen')[0]
-        // console.log("Total " + game.LegalMoveList.count + " moves generated in " + measure.duration.toFixed(3) + " ms.")
-    }
+        PrintGameState(game.GameInfo)
+        performance.mark('A')
+        game.LegalMoveList = GenerateMoves(game.GameInfo)
+        performance.mark('B')
+        performance.measure('movegen', 'A', 'B')
+        const measure = performance.getEntriesByName('movegen')[0]
+        console.log("Total " + game.LegalMoveList.count + " moves generated in " + measure.duration.toFixed(3) + " ms.")
 
+
+
+    }
 }
