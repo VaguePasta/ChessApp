@@ -3,7 +3,7 @@ import {GetBishopAttacks} from "../pieces/bishop";
 
 export const LinesIntersect: Array<BigUint64Array> = Array.from(Array(64), () => new BigUint64Array(64))
 export const LinesBetween: Array<BigUint64Array> = Array.from(Array(64), () => new BigUint64Array(64))
-export function GenerateLineBetween() {
+export function GenerateLines() {
     for (let i = 0n; i < 64n; i++) {
         for (let j = 0n; j < 64n; j++) {
             if (i == j) continue

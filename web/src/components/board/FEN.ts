@@ -1,4 +1,3 @@
-import {AlgebraicToIndex} from "./Notation.ts";
 import type {ChessPiece} from "./ChessPiece";
 import {PieceType} from "./ChessPiece";
 
@@ -30,120 +29,96 @@ export function ParseFEN(FEN: string): Map<number, ChessPiece> {
         if (currentChar >= '1' && currentChar <= '8') {
             counter += parseInt(currentChar)
         } else if (currentChar === 'p') {
-            let enPassant: number = 0
-            if (gameInformation[3] !== "-") {
-                if (AlgebraicToIndex(gameInformation[3]) - 8 === counter) {
-                    enPassant = 1
-                }
-            }
-            let pieceInfo: Uint8Array = new Uint8Array([(blackPawn << 5) + PieceType.Pawn + PieceType.Black, (enPassant << 7) + counter])
+            let pieceInfo: Uint8Array = new Uint8Array([(blackPawn << 4) + PieceType.Pawn + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             blackPawn++
         } else if (currentChar === 'P') {
-            let enPassant: number = 0
-            if (gameInformation[3] !== "-") {
-                if (AlgebraicToIndex(gameInformation[3]) + 8 === counter) {
-                    enPassant = 1
-                }
-            }
-            let pieceInfo = new Uint8Array([(whitePawn << 5) + PieceType.Pawn + PieceType.White, (enPassant << 7) + counter])
+            let pieceInfo = new Uint8Array([(whitePawn << 4) + PieceType.Pawn, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             whitePawn++
         } else if (currentChar === 'N') {
-            let pieceInfo = new Uint8Array([(whiteKnight << 5) + PieceType.Knight + PieceType.White, counter])
+            let pieceInfo = new Uint8Array([(whiteKnight << 4) + PieceType.Knight, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             whiteKnight++
         } else if (currentChar === 'n') {
-            let pieceInfo = new Uint8Array([(blackKnight << 5) + PieceType.Knight + PieceType.Black, counter])
+            let pieceInfo = new Uint8Array([(blackKnight << 4) + PieceType.Knight + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             blackKnight++
         } else if (currentChar === 'R') {
-            let pieceInfo = new Uint8Array([(whiteRook << 5) + PieceType.Rook + PieceType.White, counter])
+            let pieceInfo = new Uint8Array([(whiteRook << 4) + PieceType.Rook, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             whiteRook++
         } else if (currentChar === 'r') {
-            let pieceInfo = new Uint8Array([(blackRook << 5) + PieceType.Rook + PieceType.Black, counter])
+            let pieceInfo = new Uint8Array([(blackRook << 4) + PieceType.Rook + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             blackRook++
         } else if (currentChar === 'B') {
-            let pieceInfo = new Uint8Array([(whiteBishop << 5) + PieceType.Bishop + PieceType.White, counter])
+            let pieceInfo = new Uint8Array([(whiteBishop << 4) + PieceType.Bishop, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             whiteBishop++
         } else if (currentChar === 'b') {
-            let pieceInfo = new Uint8Array([(blackBishop << 5) + PieceType.Bishop + PieceType.Black, counter])
+            let pieceInfo = new Uint8Array([(blackBishop << 4) + PieceType.Bishop + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             blackBishop++
         } else if (currentChar === 'Q') {
-            let pieceInfo = new Uint8Array([(whiteQueen << 5) + PieceType.Queen + PieceType.White, counter])
+            let pieceInfo = new Uint8Array([(whiteQueen << 4) + PieceType.Queen, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             whiteQueen++
         } else if (currentChar === 'q') {
-            let pieceInfo = new Uint8Array([(blackQueen << 5) + PieceType.Queen + PieceType.Black, counter])
+            let pieceInfo = new Uint8Array([(blackQueen << 4) + PieceType.Queen + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
             blackQueen++
         } else if (currentChar === 'K') {
-            let pieceInfo = new Uint8Array([PieceType.King + PieceType.White, counter])
+            let pieceInfo = new Uint8Array([PieceType.King, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++
         } else if (currentChar === 'k') {
-            let pieceInfo = new Uint8Array([PieceType.King + PieceType.Black, counter])
+            let pieceInfo = new Uint8Array([PieceType.King + 8, counter])
             pieces.set(pieceInfo[0], {
-                PieceInfos: pieceInfo,
-                LegalMoves: new Uint16Array(),
+                Piece: pieceInfo,
                 Selected: false
             })
             counter++

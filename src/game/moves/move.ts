@@ -1,13 +1,7 @@
 import {IndexToAlgebraic} from "../bitboard/conversions";
 import {CastlingRights, PieceName, Pieces, Side} from "../bitboard/bit_boards";
-import {GameInfo, PrintGameState} from "../engine/game";
-import {
-    ClearBit,
-    CountSetBit,
-    LeastSignificantOneIndex, PrintBoard,
-    RightShift,
-    SetBit
-} from "../bitboard/bit_operations";
+import {GameInfo} from "../engine/game";
+import {ClearBit, CountSetBit, LeastSignificantOneIndex, RightShift, SetBit} from "../bitboard/bit_operations";
 import {IsKingInCheck} from "./attacks";
 import {LinesBetween, LinesIntersect} from "../bitboard/consts";
 import {GetBishopAttacks} from "../pieces/bishop";
@@ -392,23 +386,30 @@ export function ExecuteMove(gameInfo: GameInfo, move: number): GameInfo {
     return game
 }
 
-export function PrintMove(move: number, side: number) {
-                          //, side: number, pieceBoards: BigUint64Array) {
+export function GenMoveString(move: number, side: number) {
     let moveString: string = ""
-    // if (IsCastling(move) === 1) {
-    //     moveString += "0-0"
-    // }
-    // else if (IsCastling(move) === -1) {
-    //     moveString += "0-0-0"
-    // }
-    // else {
+    let promotion = MovePromotion(move, side)
+    moveString += IndexToAlgebraic(BigInt(GetMoveSource(move)))
+    moveString += IndexToAlgebraic(BigInt(GetMoveTarget(move)))
+    if (promotion !== 0) moveString += PieceName.charAt(promotion)
+    return moveString
+}
+export function PrintMove(move: number, side: number, pieceBoards: BigUint64Array) {
+    let moveString: string = ""
+    if (IsCastling(move) === 1) {
+        moveString += "0-0"
+    }
+    else if (IsCastling(move) === -1) {
+        moveString += "0-0-0"
+    }
+    else {
         let promotion = MovePromotion(move, side)
-    //     moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards, side))
+        moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards, side))
         moveString += IndexToAlgebraic(BigInt(GetMoveSource(move)))
-        // if (MoveCapture(move)) moveString += "x"
+        if (MoveCapture(move)) moveString += "x"
         moveString += IndexToAlgebraic(BigInt(GetMoveTarget(move)))
         if (promotion !== 0) moveString += PieceName.charAt(promotion)
-        // if (((move & MoveFlagsMask) >>> 12) == 5) moveString += "e.p"
-    // }
-    return moveString
+        if (((move & MoveFlagsMask) >>> 12) == 5) moveString += "e.p"
+    }
+    console.log(moveString)
 }

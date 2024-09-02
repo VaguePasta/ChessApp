@@ -1,14 +1,10 @@
 <script setup>
-import Game from "@/components/board/Game.vue";
-const side = 0b01
+const side = 0
 </script>
 
 <template>
-  <div>
-    <Game :side="side"/>
-  </div>
+  <RouterView />
 </template>
 
 <style scoped>
-
 </style>
