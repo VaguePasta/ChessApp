@@ -16,7 +16,7 @@ export interface ChessPiece {
       | x | x | x | x | x | x | x | x |
       |_______________|___|___________|
              ↓          ↓        ↓
-           Order       Color    Type
+           Order      Color    Type
       3 most significant bits denote the order of the piece, i.e. to distinguish identical pieces from each other.
    */
     Piece: Uint8Array

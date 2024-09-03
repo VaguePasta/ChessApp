@@ -6,7 +6,7 @@ export enum Side {
         0010: White queenside casting.
         0100: Black kingside castling.
         1000: Black queenside castling.
-     */
+*/
 export enum CastlingRights {
     WhiteKing = 1,
     WhiteQueen = 2,

@@ -33,7 +33,7 @@ export enum MoveFlags {
       4 	    0 	        1 	        0 	        0 	    captures
       5 	    0 	        1 	        0 	        1 	    ep-capture
       8 	    1 	        0 	        0 	        0 	    knight-promotion
-      9 	    1 	        0 	        0       	1   	bishop-promotion
+      9 	    1 	        0 	        0       	1           bishop-promotion
      10 	    1 	        0 	        1       	0 	    rook-promotion
      11 	    1 	        0 	        1       	1 	    queen-promotion
      12 	    1 	        1 	        0       	0 	    knight-promo capture
@@ -154,12 +154,6 @@ export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList): MoveList {
             LegalMoves.moves[LegalMoves.count] = move
             LegalMoves.count++
         }
-    //     game = ExecuteMove(game, move)
-    //     if (!IsKingInCheck(game)) {
-    //         LegalMoves.moves[LegalMoves.count] = move
-    //         LegalMoves.count++
-    //     }
-    //     game = structuredClone(GameCopy)
     }
     return LegalMoves
 }
