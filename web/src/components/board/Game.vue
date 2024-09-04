@@ -5,12 +5,19 @@
   import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "./Moves.ts";
   import {websocket} from "@/connection/websocket.ts";
   import {PieceType} from "@/components/board/ChessPiece.ts";
+  import LegalSquare from "@/components/board/LegalSquare.vue";
   const legalMoves = ref(null)
   const pendingMove = ref(0)
   const promoting = ref(false)
+  const props = defineProps(['side', 'pos'])
+  let gameState = ParseFEN(props.pos)
+  const pieces: any = ref(gameState[0]);
+  const sideToMove = ref(gameState[1])
+  const selectingPiece = ref(0)
+  const movableSquare = ref([])
   websocket.onmessage = (msg) => {
     if (typeof msg.data === "string") {
-      console.log("Won.")
+      console.log(msg.data.toString())
     }
     else {
       if (sideToMove.value !== props.side) {
@@ -18,18 +25,10 @@
         Move(move, false)
       }
       else {
-        let moves = new Uint16Array(msg.data)
-        if (moves.length === 0) {
-          console.log("Lost.")
-        }
-        legalMoves.value = moves
+        legalMoves.value = new Uint16Array(msg.data)
       }
     }
   }
-  let selectingPiece = ref(0)
-  const props = defineProps(['side', 'pos'])
-  let sideToMove = ref(0)
-  const pieces: any = ref(ParseFEN(props.pos));
   function MoveIsLegal(move): number {
     if (props.side !== sideToMove.value) return move
     else {
@@ -50,6 +49,11 @@
     if (selectingPiece.value === 0) {
       selectingPiece.value = pieceNumber
       pieces.value.get(pieceNumber).Selected = true
+      for (let i = 0; i < legalMoves.value.length; i++) {
+        if (GetSourceSquare(legalMoves.value[i]) === pieces.value.get(pieceNumber).Piece[2]) {
+          movableSquare.value.push(legalMoves.value[i])
+        }
+      }
       event.preventDefault()
       event.stopPropagation()
     }
@@ -57,13 +61,21 @@
       if (pieceNumber === selectingPiece.value) {
         pieces.value.get(pieceNumber).Selected = false
         selectingPiece.value = 0
+        movableSquare.value.length = 0
         event.preventDefault()
         event.stopPropagation()
       }
       else {
         pieces.value.get(selectingPiece.value).Selected = false
-        selectingPiece.value = pieceNumber
+        movableSquare.value.length = 0
+        selectingPiece.value = 0
         pieces.value.get(pieceNumber).Selected = true
+        for (let i = 0; i < legalMoves.value.length; i++) {
+          if (GetSourceSquare(legalMoves.value[i]) === pieces.value.get(pieceNumber).Piece[2]) {
+            movableSquare.value.push(legalMoves.value[i])
+          }
+        }
+        selectingPiece.value = pieceNumber
         event.preventDefault()
         event.stopPropagation()
       }
@@ -98,7 +110,7 @@
         return move
       }
     } else {
-      if (pieces.value.get(pieceKey).Piece[1] === 0 && targetSquare >= 56) {
+      if (pieces.value.get(pieceKey).Piece[1] === 8 && targetSquare >= 56) {
         promoting.value = true
         pendingMove.value = move
         return -1
@@ -127,11 +139,15 @@
     else move_check = move
     if (move_check !== -1) {
       pieces.value.get(pieceKey).Selected = false
+      selectingPiece.value = 0
+      movableSquare.value.length = 0
       ProcessMove(move_check, pieceKey)
     }
     else {
       console.log("Illegal move.")
       pieces.value.get(pieceKey).Selected = false
+      selectingPiece.value = 0
+      movableSquare.value.length = 0
       return 0
     }
     return move_check
@@ -149,6 +165,7 @@
         SendMove(move, true)
       }
       selectingPiece.value = 0
+      movableSquare.value.length = 0
     }
   }
   function SendMove(move, check) {
@@ -171,16 +188,24 @@
       }
     else if (flag === 2) { //King castle.
       if (sideToMove.value === 0) {
+        pieces.value.get(FindPiece(63)).Selected = true
         pieces.value.get(FindPiece(63)).Piece[2] = targetSquare - 1
+        pieces.value.get(FindPiece(targetSquare - 1)).Selected = false
       } else {
+        pieces.value.get(FindPiece(7)).Selected = true
         pieces.value.get(FindPiece(7)).Piece[2] = targetSquare - 1
+        pieces.value.get(FindPiece(targetSquare - 1)).Selected = false
       }
     }
     else if (flag === 3) { //Queen castle.
       if (sideToMove.value === 0) {
+        pieces.value.get(FindPiece(56)).Selected = true
         pieces.value.get(FindPiece(56)).Piece[2] = targetSquare + 1
+        pieces.value.get(FindPiece(targetSquare + 1)).Selected = false
       } else {
+        pieces.value.get(FindPiece(0)).Selected = true
         pieces.value.get(FindPiece(0)).Piece[2] = targetSquare - 1
+        pieces.value.get(FindPiece(targetSquare + 1)).Selected = false
       }
     }
     else if (flag === 11 || flag === 15) {
@@ -189,7 +214,7 @@
       if (sideToMove.value === 0) {
         ChangePiece(0, PieceType.Queen, pieceKey)
       } else {
-        ChangePiece(1, PieceType.Knight, pieceKey)
+        ChangePiece(1, PieceType.Queen, pieceKey)
       }
     }
     else if (flag === 10 || flag === 14) {
@@ -230,6 +255,8 @@
     SendMove(pendingMove.value, false)
     pendingMove.value = 0
     promoting.value = false
+    selectingPiece.value = 0
+    movableSquare.value.length = 0
   }
   function RookPromote() {
     let targetSquare = GetTargetSquare(pendingMove.value)
@@ -242,6 +269,8 @@
     SendMove(pendingMove.value, false)
     pendingMove.value = 0
     promoting.value = false
+    selectingPiece.value = 0
+    movableSquare.value.length = 0
   }
   function BishopPromote() {
     let targetSquare = GetTargetSquare(pendingMove.value)
@@ -254,6 +283,8 @@
     SendMove(pendingMove.value, false)
     pendingMove.value = 0
     promoting.value = false
+    selectingPiece.value = 0
+    movableSquare.value.length = 0
   }
   function KnightPromote() {
     let targetSquare = GetTargetSquare(pendingMove.value)
@@ -266,8 +297,10 @@
     SendMove(pendingMove.value, false)
     pendingMove.value = 0
     promoting.value = false
+    selectingPiece.value = 0
+    movableSquare.value.length = 0
   }
-  if (props.side === 1) websocket.send("ok")
+  websocket.send("ok")
 </script>
 
 <template>
@@ -283,6 +316,11 @@
       <button v-if="props.side" @click="KnightPromote" class="promotion-button black-knight"/>
       <button v-else @click="KnightPromote" class="promotion-button white-knight"/>
     </div>
+
+    <div v-if="selectingPiece" class="move-mask">
+      <LegalSquare v-for="move in movableSquare" :side="side" :move="move" :key="move"/>
+    </div>
+
     <div v-if="promoting" class="modal-mask"/>
   </div>
 </template>
@@ -296,6 +334,13 @@
   aspect-ratio: 1/1;
   height: 90vh;
   position: absolute;
+  z-index: 1;
+}
+.move-mask {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
   z-index: 2;
 }
 .modal-mask {

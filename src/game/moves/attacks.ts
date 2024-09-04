@@ -1,7 +1,7 @@
 import {LeastSignificantOneIndex} from "../bitboard/bit_operations";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {PawnAttackTables} from "../pieces/pawn";
-import {GameInfo} from "../engine/game";
+import {GameState} from "../engine/game";
 import {KnightAttackTables} from "../pieces/knight";
 import {GetBishopAttacks} from "../pieces/bishop";
 import {GetRookAttacks} from "../pieces/rook";
@@ -24,7 +24,7 @@ export function IsSquareAttacked(pieceBoards: BigUint64Array, occupancyBoards: B
     }
     return false
 }
-export function PrintAttackedSquare(game: GameInfo, side: number) {
+export function PrintAttackedSquare(game: GameState, side: number) {
     let board: string = ""
     board += "    a  b  c  d  e  f  g  h\n"
     for (let rank = 0; rank < 8; rank++) {
@@ -36,7 +36,7 @@ export function PrintAttackedSquare(game: GameInfo, side: number) {
     }
     console.log(board)
 }
-export function IsKingInCheck(game: GameInfo, checkedBy: number): boolean {
+export function IsKingInCheck(game: GameState, checkedBy: number): boolean {
     let kingBoard = checkedBy ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
     let kingIndex = Number(LeastSignificantOneIndex(kingBoard))
     return IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, checkedBy);

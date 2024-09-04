@@ -1,4 +1,4 @@
-import {Game, GameInfo} from "../engine/game";
+import {Game, GameState} from "../engine/game";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {GeneratePawnPushes} from "./pawn_pushes";
 import {GeneratePawnCaptures} from "./pawn_attacks";
@@ -8,7 +8,7 @@ import {GenerateBishopMoves} from "./bishop_moves";
 import {GenerateKingMoves} from "./king_moves";
 import {GenerateRookMoves} from "./rook_moves";
 import {MoveList, TryMoves} from "./move";
-export function GenerateMoves(game: GameInfo): MoveList {
+export function GenerateMoves(game: GameState): MoveList {
     let pieceBoard: bigint
     let side = game.SideToMove
     let PseudoLegalMoveList = {

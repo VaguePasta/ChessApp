@@ -1,4 +1,4 @@
-import {GameInfo} from "../engine/game";
+import {GameState} from "../engine/game";
 import {AlgebraicToIndex} from "../bitboard/conversions";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {SetBit} from "../bitboard/bit_operations";
@@ -14,7 +14,7 @@ import {SetBit} from "../bitboard/bit_operations";
 enum FENfields {
     positions, active_color, castling, en_passant, half_move, full_move
 }
-export function ParseFEN(game: GameInfo, fenString: string): number {
+export function ParseFEN(game: GameState, fenString: string): number {
     let FEN: string[] = fenString.split(" ")
     //Parse active color
     switch (FEN[FENfields.active_color]) {

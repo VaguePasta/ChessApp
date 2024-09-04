@@ -1,6 +1,6 @@
-import {GameInfo} from "../engine/game";
+import {GameState} from "../engine/game";
 
-export function ConstructFEN(game: GameInfo): string {
+export function ConstructFEN(game: GameState): string {
     let FEN: string = ""
     //TODO: Generate FEN from game state.
     return FEN

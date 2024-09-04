@@ -1,13 +1,6 @@
 import type {ChessPiece} from "./ChessPiece";
 import {PieceType} from "./ChessPiece";
-export let FENStart = ""
-export function SetFEN(FEN: string) {
-    FENStart = FEN
-}
-export enum PieceCounter {
-    blackPawn, whitePawn, blackKnight, whiteKnight, blackBishop, whiteBishop, blackRook, whiteRook, blackQueen, whiteQueen
-}
-export function ParseFEN(FEN: string): Map<number, ChessPiece> {
+export function ParseFEN(FEN: string) {
     let pieces = new Map<number, ChessPiece>();
     let counter = 0
     let pieceCount = 1
@@ -15,10 +8,10 @@ export function ParseFEN(FEN: string): Map<number, ChessPiece> {
       A FEN string contains six fields:
       0: Pieces positions.
       1: Active color.
-      2: Castling availability.
-      3: En passant square.
-      4: Half-move clock.
-      5: Full-move clock.
+      2: Castling availability.  //Ignore
+      3: En passant square.   //Ignore
+      4: Half-move clock.  //Ignore
+      5: Full-move clock.  //Ignore
     */
     const gameInformation = FEN.split(" ")
 
@@ -124,5 +117,5 @@ export function ParseFEN(FEN: string): Map<number, ChessPiece> {
             pieceCount++
         }
     }
-    return pieces
+    return [pieces, gameInformation[1] === 'w' ? 0 : 1]
 }

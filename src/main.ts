@@ -7,8 +7,9 @@ import {WebSocketServer} from "ws";
 import http = require('http')
 import {Matches, NewMatch, PlayMove} from "./match/match";
 import {GenerateMoves} from "./game/moves/movegen";
-import {FENStart, PrintGameState} from "./game/engine/game";
-import {ExecuteMove, PrintMove} from "./game/moves/move";
+import {ExecuteMove} from "./game/moves/move";
+import {Player} from "./match/player";
+import {Side} from "./game/bitboard/bit_boards";
 app.use([
     express.text({
         type: "text/plain",
@@ -23,7 +24,7 @@ app.use([
 ])
 app.post('/new', (_, res) => {
     token = GenerateRandomToken()
-    res.end(JSON.stringify([token + "1", FENStart]))
+    res.end(JSON.stringify([token + "1", "4R3/6P1/1K6/8/5r2/8/3p4/7k b - - 0 1"]))
 })
 let token: string
 export const server = http.createServer(app)
@@ -35,34 +36,44 @@ server.listen(8080,() => {
 export const wss = new WebSocketServer({
     noServer: true,
 })
-wss.on('connection', (ws) => {
-    if (NewMatch(token, FENStart, ws)) {
-        // @ts-ignore
-        // let game = Matches.get(token).Game
-        // game.LegalMoveList = GenerateMoves(game.GameInfo)
-        // ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
-        // ws.on('message', (data: any) => {
-        //     // @ts-ignore
-        //     PlayMove(parseInt(data), Matches.get(token).Game, ws)
-        // })
+wss.on('connection', (ws: any) => {
+    let player: Player = {
+        Side: Side.black,
+        Connection: ws,
+    }
+    if (NewMatch(token, "4R3/6P1/1K6/8/5r2/8/3p4/7k b - - 0 1", player)) {
+        //@ts-ignore
         let game = Matches.get(token).Game
-        ws.on('message', (data: any) => {
-            if (data.toString() === "ok") {
-                setTimeout(() => {
-                    console.log("Client ready.")
-                    game.LegalMoveList = GenerateMoves(game.GameInfo)
-                    let startmove = game.LegalMoveList.moves[Math.floor(Math.random() * game.LegalMoveList.count)]
-                    ws.send(new Uint16Array([startmove]).buffer)
-                    game.GameInfo = ExecuteMove(game.GameInfo, startmove)
-                    game.LegalMoveList = GenerateMoves(game.GameInfo)
+        if (player.Side === game.GameState.SideToMove) {
+            ws.on('message', (data: any) => {
+                if (data.toString() === "ok") {
+                    game.LegalMoveList = GenerateMoves(game.GameState)
                     ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
                     ws.on('message', (data: any) => {
                         // @ts-ignore
-                        PlayMove(parseInt(data), Matches.get(token).Game, ws)
+                        setTimeout(() => PlayMove(parseInt(data), Matches.get(token).Game, player), 1000)
                     })
-                }, 2000)
-            }
-        })
+                }
+            })
+        }
+        else {
+            ws.on('message', (data: any) => {
+                if (data.toString() === "ok") {
+                    setTimeout(() => {
+                        game.LegalMoveList = GenerateMoves(game.GameState)
+                        let startmove = game.LegalMoveList.moves[Math.floor(Math.random() * game.LegalMoveList.count)]
+                        ws.send(new Uint16Array([startmove]).buffer)
+                        game.GameState = ExecuteMove(game.GameState, startmove)
+                        game.LegalMoveList = GenerateMoves(game.GameState)
+                        ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+                        ws.on('message', (data: any) => {
+                            // @ts-ignore
+                            setTimeout(() => PlayMove(parseInt(data), Matches.get(token).Game, player), 1000)
+                        })
+                    }, 1000)
+                }
+            })
+        }
         ws.on('close',() => {
             Matches.delete(token)
             token = ""

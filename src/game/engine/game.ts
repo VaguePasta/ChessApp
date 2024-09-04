@@ -4,10 +4,10 @@ import {MoveList} from "../moves/move";
 import {ParseFEN} from "../fen/parse";
 export const FENStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 export interface Game {
-    GameInfo: GameInfo
+    GameState: GameState
     LegalMoveList: MoveList
 }
-export interface GameInfo {
+export interface GameState {
     PieceBitboards: BigUint64Array;
     OccupancyBoards: BigUint64Array;
     PinnedBoards: BigUint64Array;
@@ -19,7 +19,7 @@ export interface GameInfo {
 }
 export function NewGame(FEN: string): Game|null {
     let game = {
-        GameInfo: {
+        GameState: {
             PieceBitboards: new BigUint64Array(12),
             OccupancyBoards: new BigUint64Array(3),
             PinnedBoards: new BigUint64Array(2),
@@ -31,12 +31,12 @@ export function NewGame(FEN: string): Game|null {
         },
         LegalMoveList: {moves: new Uint16Array(218), count: 0}
     }
-    if (ParseFEN(game.GameInfo, FEN) !== -1) {
+    if (ParseFEN(game.GameState, FEN) !== -1) {
         return game
     }
     else return null
 }
-export function PrintGameState(game: GameInfo) {
+export function PrintGameState(game: GameState) {
     let bitboards = game.PieceBitboards
     let board: string = ""
     board += "    a b c d e f g h\n"

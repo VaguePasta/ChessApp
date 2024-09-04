@@ -1,8 +1,8 @@
 import {GenerateMoves} from "../moves/movegen";
-import {GameInfo} from "./game";
+import {GameState} from "./game";
 import {ExecuteMove, GenMoveString} from "../moves/move";
 
-export function Perft(game: GameInfo, depth: number): number {
+export function Perft(game: GameState, depth: number): number {
     let i: number;
     let nodes: number = 0
     let moveList = GenerateMoves(game)
@@ -20,7 +20,7 @@ export function Perft(game: GameInfo, depth: number): number {
     }
     return nodes
 }
-export function Divide(game: GameInfo, depth: number) {
+export function Divide(game: GameState, depth: number) {
     let total = 0
     let moveList = GenerateMoves(game)
     for (let i = 0; i < moveList.count; i++) {

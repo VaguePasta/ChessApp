@@ -1,6 +1,6 @@
 import {IndexToAlgebraic} from "../bitboard/conversions";
 import {CastlingRights, PieceName, Pieces, Side} from "../bitboard/bit_boards";
-import {GameInfo} from "../engine/game";
+import {GameState} from "../engine/game";
 import {ClearBit, CountSetBit, LeastSignificantOneIndex, RightShift, SetBit} from "../bitboard/bit_operations";
 import {IsKingInCheck} from "./attacks";
 import {LinesBetween, LinesIntersect} from "../bitboard/consts";
@@ -103,12 +103,12 @@ function IsCastling(move: number): number {
     else if (flag === MoveFlags.queen_castle) return -1
     return 0
 }
-export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList): MoveList {
+export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList {
     let LegalMoves = {
         count: 0,
         moves: new Uint16Array(218)
     }
-    let GameCopy: GameInfo = structuredClone(game)
+    let GameCopy: GameState = structuredClone(game)
     let movePiece
     let move
     if (IsKingInCheck(game, 1 - game.SideToMove)) {
@@ -157,7 +157,7 @@ export function TryMoves(game: GameInfo, pseudoLegalMoves: MoveList): MoveList {
     }
     return LegalMoves
 }
-export function ExecuteMove(gameInfo: GameInfo, move: number): GameInfo {
+export function ExecuteMove(gameInfo: GameState, move: number): GameState {
     let game = structuredClone(gameInfo)
     let flag = GetMoveFlag(move)
     let source = BigInt(GetMoveSource(move))
