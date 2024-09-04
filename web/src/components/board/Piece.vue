@@ -1,50 +1,55 @@
 <script setup lang="ts">
   import {ref, watch} from "vue";
   const props = defineProps(['side','information','sideToMove'])
-  const oldPos = ref(props.information.Piece[1])
-  const oldLeft = ref(props.side === 0 ? (((props.information.Piece[1] % 8) * 12.5).toString() + '%') : ((Math.floor(props.information.Piece[1] / 8) * 12.5).toString() + '%'))
-  const oldTop = ref(props.side === 0 ? ((Math.floor(props.information.Piece[1] / 8) * 12.5).toString() + '%') : ((87.5 - (props.information.Piece[1] % 8) * 12.5).toString() + '%'))
+  const oldType = ref(props.information.Piece[1])
+  const oldPos = ref(props.information.Piece[2])
+  const oldLeft = ref(props.side === 0 ? (((props.information.Piece[2] % 8) * 12.5).toString() + '%') : ((Math.floor(props.information.Piece[2] / 8) * 12.5).toString() + '%'))
+  const oldTop = ref(props.side === 0 ? ((Math.floor(props.information.Piece[2] / 8) * 12.5).toString() + '%') : ((87.5 - (props.information.Piece[2] % 8) * 12.5).toString() + '%'))
   let styleClass = "";
-  switch (props.information.Piece[0] & 0b1111) {
-    case 0:
-      styleClass = 'WhitePawn'
-      break
-    case 8:
-      styleClass = 'BlackPawn'
-      break
-    case 1:
-      styleClass = 'WhiteKnight'
-      break
-    case 9:
-      styleClass = 'BlackKnight'
-      break
-    case 2:
-      styleClass = 'WhiteBishop'
-      break
-    case 10:
-      styleClass = 'BlackBishop'
-      break
-    case 3:
-      styleClass = 'WhiteRook'
-      break
-    case 11:
-      styleClass = 'BlackRook'
-      break
-    case 4:
-      styleClass = 'WhiteQueen'
-      break
-    case 12:
-      styleClass = 'BlackQueen'
-      break
-    case 5:
-      styleClass = 'WhiteKing'
-      break
-    case 13:
-      styleClass = 'BlackKing'
-      break
+  function SetStyle() {
+    switch (props.information.Piece[1] & 0b1111) {
+      case 0:
+        styleClass = 'WhitePawn'
+        break
+      case 8:
+        styleClass = 'BlackPawn'
+        break
+      case 1:
+        styleClass = 'WhiteKnight'
+        break
+      case 9:
+        styleClass = 'BlackKnight'
+        break
+      case 2:
+        styleClass = 'WhiteBishop'
+        break
+      case 10:
+        styleClass = 'BlackBishop'
+        break
+      case 3:
+        styleClass = 'WhiteRook'
+        break
+      case 11:
+        styleClass = 'BlackRook'
+        break
+      case 4:
+        styleClass = 'WhiteQueen'
+        break
+      case 12:
+        styleClass = 'BlackQueen'
+        break
+      case 5:
+        styleClass = 'WhiteKing'
+        break
+      case 13:
+        styleClass = 'BlackKing'
+        break
+    }
   }
+  SetStyle()
   watch(props.information, (newPosition) => {
-    if (oldPos.value === newPosition.Piece[1]) return
+    if (oldType !== props.information.Piece[1]) SetStyle()
+    if (oldPos.value === newPosition.Piece[2]) return
     if (props.side === 0) {
       oldLeft.value = ((oldPos.value % 8) * 12.5).toString() + '%'
       oldTop.value = (Math.floor(oldPos.value / 8) * 12.5).toString() + '%'
@@ -53,7 +58,7 @@
       oldLeft.value = (87.5 - ((oldPos.value) % 8) * 12.5).toString() + '%'
       oldTop.value = (87.5 - Math.floor((oldPos.value) / 8) * 12.5).toString() + '%'
     }
-    oldPos.value = newPosition.Piece[1]
+    oldPos.value = newPosition.Piece[2]
   })
 </script>
 
@@ -61,10 +66,10 @@
   <div class="Piece" @click="$emit('selecting-piece', $event, props.information.Piece[0])"
        :key="oldPos"
   :class="[styleClass,
-   props.information.Selected ? 'Selected' : '', ((props.side !== (props.information.Piece[0] >> 3 & 1)) || props.sideToMove !== props.side) ? 'Opponent' : '']"
+   props.information.Selected ? 'Selected' : '', ((props.side !== (props.information.Piece[1] >> 3 & 1)) || props.sideToMove !== props.side) ? 'Opponent' : '']"
   :style="[ props.side === 0 ?
-      {'left': ((props.information.Piece[1]) % 8) * 12.5 + '%', 'top': Math.floor((props.information.Piece[1]) / 8) * 12.5 + '%'} :
-      {'left': 87.5 - ((props.information.Piece[1]) % 8) * 12.5 + '%', 'top': 87.5 - Math.floor((props.information.Piece[1]) / 8) * 12.5 + '%'}]"/>
+      {'left': ((props.information.Piece[2]) % 8) * 12.5 + '%', 'top': Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%'} :
+      {'left': 87.5 - ((props.information.Piece[2]) % 8) * 12.5 + '%', 'top': 87.5 - Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%'}]"/>
 </template>
 
 <style scoped>

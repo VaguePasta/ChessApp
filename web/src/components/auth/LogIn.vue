@@ -4,7 +4,6 @@
   import {gameToken, server, setGameToken, websocket, WebSocketConnect} from "@/connection/websocket.ts";
 
   const router = useRouter()
-
   function Login() {
     let ok = LogIn()
     if (!ok) return
@@ -17,10 +16,11 @@
     }).then((res) => {
       if (res.ok) {
         res.text().then((data) => {
-          WebSocketConnect(data)
+          let gameData = JSON.parse(data)
+          WebSocketConnect(gameData[0])
           websocket.onopen = () => {
-            setGameToken(data)
-            router.push({path: "/game", query: {g: gameToken}})
+            setGameToken(gameData[0])
+            router.push({path: "/game", query: {g: gameToken, p: gameData[1]}})
           }
         })
       }

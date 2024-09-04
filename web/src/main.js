@@ -4,7 +4,7 @@ import LogIn from "@/components/auth/LogIn.vue";
 import Game from "@/components/board/Game.vue";
 import {createMemoryHistory, createRouter} from "vue-router";
 const routes = [
-    { path: '/game', component: Game, props: route => ({side : parseInt(route.query.g.slice(-1))})},
+    { path: '/game', component: Game, props: route => ({side : parseInt(route.query.g.slice(-1)), pos: route.query.p})},
     { path: '/login', component: LogIn },
     { path: '/', component: LogIn}
 ]

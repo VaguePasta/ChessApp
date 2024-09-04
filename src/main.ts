@@ -7,6 +7,8 @@ import {WebSocketServer} from "ws";
 import http = require('http')
 import {Matches, NewMatch, PlayMove} from "./match/match";
 import {GenerateMoves} from "./game/moves/movegen";
+import {FENStart, PrintGameState} from "./game/engine/game";
+import {ExecuteMove, PrintMove} from "./game/moves/move";
 app.use([
     express.text({
         type: "text/plain",
@@ -21,7 +23,7 @@ app.use([
 ])
 app.post('/new', (_, res) => {
     token = GenerateRandomToken()
-    res.end(token + "0")
+    res.end(JSON.stringify([token + "1", FENStart]))
 })
 let token: string
 export const server = http.createServer(app)
@@ -34,14 +36,32 @@ export const wss = new WebSocketServer({
     noServer: true,
 })
 wss.on('connection', (ws) => {
-    if (NewMatch(token, ws)) {
+    if (NewMatch(token, FENStart, ws)) {
         // @ts-ignore
+        // let game = Matches.get(token).Game
+        // game.LegalMoveList = GenerateMoves(game.GameInfo)
+        // ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+        // ws.on('message', (data: any) => {
+        //     // @ts-ignore
+        //     PlayMove(parseInt(data), Matches.get(token).Game, ws)
+        // })
         let game = Matches.get(token).Game
-        game.LegalMoveList = GenerateMoves(game.GameInfo)
-        ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
         ws.on('message', (data: any) => {
-            // @ts-ignore
-            PlayMove(parseInt(data), Matches.get(token).Game, ws)
+            if (data.toString() === "ok") {
+                setTimeout(() => {
+                    console.log("Client ready.")
+                    game.LegalMoveList = GenerateMoves(game.GameInfo)
+                    let startmove = game.LegalMoveList.moves[Math.floor(Math.random() * game.LegalMoveList.count)]
+                    ws.send(new Uint16Array([startmove]).buffer)
+                    game.GameInfo = ExecuteMove(game.GameInfo, startmove)
+                    game.LegalMoveList = GenerateMoves(game.GameInfo)
+                    ws.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+                    ws.on('message', (data: any) => {
+                        // @ts-ignore
+                        PlayMove(parseInt(data), Matches.get(token).Game, ws)
+                    })
+                }, 2000)
+            }
         })
         ws.on('close',() => {
             Matches.delete(token)

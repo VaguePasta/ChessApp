@@ -1,5 +1,4 @@
 <script setup>
-const side = 0
 </script>
 
 <template>
