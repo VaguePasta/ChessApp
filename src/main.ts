@@ -24,7 +24,7 @@ app.use([
 ])
 app.post('/new', (_, res) => {
     token = GenerateRandomToken()
-    res.end(JSON.stringify([token + "1", "4R3/6P1/1K6/8/5r2/8/3p4/7k b - - 0 1"]))
+    res.end(JSON.stringify([token + "0", "8/8/1K6/3N4/6b1/4r3/8/7k w - - 99 1"]))
 })
 let token: string
 export const server = http.createServer(app)
@@ -38,10 +38,10 @@ export const wss = new WebSocketServer({
 })
 wss.on('connection', (ws: any) => {
     let player: Player = {
-        Side: Side.black,
+        Side: Side.white,
         Connection: ws,
     }
-    if (NewMatch(token, "4R3/6P1/1K6/8/5r2/8/3p4/7k b - - 0 1", player)) {
+    if (NewMatch(token, "8/8/1K6/3N4/6b1/4r3/8/7k w - - 99 1", player)) {
         //@ts-ignore
         let game = Matches.get(token).Game
         if (player.Side === game.GameState.SideToMove) {
