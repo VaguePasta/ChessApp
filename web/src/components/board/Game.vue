@@ -6,6 +6,7 @@
   import {websocket} from "@/connection/websocket.ts";
   import {PieceType} from "@/components/board/ChessPiece.ts";
   import LegalSquare from "@/components/board/LegalSquare.vue";
+  import {useRouter} from "vue-router";
   const moveSound = new Audio("/sounds/move.mp3")
   const captureSound = new Audio("/sounds/capture.mp3")
   const castlingSound = new Audio("/sounds/castle.mp3")
@@ -22,9 +23,10 @@
   const sideToMove = ref(gameState[1])
   const selectingPiece = ref(0)
   const movableSquare = ref([])
+  const result = ref(null)
   websocket.onmessage = (msg) => {
     if (typeof msg.data === "string") {
-      console.log(msg.data.toString())
+      result.value = msg.data.toString()
       if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
       if (msg.data.toString() === "Won.") {
         winningSound.play()
@@ -328,6 +330,10 @@
     selectingPiece.value = 0
     movableSquare.value.length = 0
   }
+  const router = useRouter()
+  function returnToMenu() {
+    router.push({path : "/"})
+  }
   websocket.send("ok")
 </script>
 
@@ -349,7 +355,13 @@
       <LegalSquare v-for="move in movableSquare" :side="side" :move="move" :key="move"/>
     </div>
 
-    <div v-if="promoting" class="modal-mask"/>
+    <div v-if="promoting || (result !== null)" class="modal-mask"/>
+
+    <div v-if="result !== null" class="end-popup">
+      <div style="font-size: 25px; padding-bottom: 5px;">The game has concluded.</div>
+      <div style="font-size: 20px; padding-bottom: 5px;">{{result}}</div>
+      <button @click="returnToMenu" class="end-button">Back to main menu</button>
+    </div>
   </div>
 </template>
 
@@ -363,6 +375,56 @@
   height: 90vh;
   position: absolute;
   z-index: 1;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.end-button {
+  background-color: #81b64c;
+  border: none;
+  padding: 7px;
+  font-family: "Open Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+  font-size: 16px;
+  border-radius: 5px;
+}
+.end-button:hover {
+  background-color: #a3d160;
+}
+.end-popup {
+  background-color: #79796a;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: 60%;
+  border-radius: 10px;
+  padding: 15px;
+  box-sizing: border-box;
+  border: 1px solid black;
+  font-family: "Open Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 300;
+  font-style: normal;
+  font-variation-settings: "wdth" 100;
+  animation: zoom-in 0.2s;
+}
+@keyframes zoom-in {
+  from {
+    transform: scale(0.9, 0.9) translate(-55.6%, -55.6%);
+  }
+  to {
+    transform: scale(1, 1) translate(-50%, -50%);
+  }
 }
 .move-mask {
   position: absolute;

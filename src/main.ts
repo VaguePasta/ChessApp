@@ -10,6 +10,7 @@ import {GenerateMoves} from "./game/moves/movegen";
 import {ExecuteMove} from "./game/moves/move";
 import {Player} from "./match/player";
 import {Side} from "./game/bitboard/bit_boards";
+import {FENStart} from "./game/engine/game";
 app.use([
     express.text({
         type: "text/plain",
@@ -24,7 +25,7 @@ app.use([
 ])
 app.post('/new', (_, res) => {
     token = GenerateRandomToken()
-    res.end(JSON.stringify([token + "0", "1b2k3/6P1/8/8/2B5/8/8/3K4 w - - 0 1"]))
+    res.end(JSON.stringify([token, "6k1/6p1/8/6KQ/1r6/q2b4/8/8 w - - 0 1"]))
 })
 let token: string
 export const server = http.createServer(app)
@@ -36,12 +37,12 @@ server.listen(8080,() => {
 export const wss = new WebSocketServer({
     noServer: true,
 })
-wss.on('connection', (ws: any) => {
+wss.on('connection', (ws: any, request: any) => {
     let player: Player = {
-        Side: Side.white,
+        Side: request.slice(-1) === "1" ? Side.black : Side.white,
         Connection: ws,
     }
-    if (NewMatch(token, "1b2k3/6P1/8/8/2B5/8/8/3K4 w - - 0 1", player)) {
+    if (NewMatch(token, "6k1/6p1/8/6KQ/1r6/q2b4/8/8 w - - 0 1", player)) {
         //@ts-ignore
         let game = Matches.get(token).Game
         if (player.Side === game.GameState.SideToMove) {
@@ -81,9 +82,10 @@ wss.on('connection', (ws: any) => {
     }
 })
 server.on('upgrade', function upgrade(request, socket, head) {
-    if (request.url !== undefined && request.url.slice(0, -1).slice(1) === token) {
+    if (request.url !== undefined && request.url.slice(1, request.url.length - 1) === token) {
         wss.handleUpgrade(request, socket, head, (ws) => {
-            wss.emit('connection', ws, request)
+            // @ts-ignore
+            wss.emit('connection', ws, request.url.slice(1))
         })
     }
     else {

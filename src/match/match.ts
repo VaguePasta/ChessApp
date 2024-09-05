@@ -79,7 +79,7 @@ export function PlayMove(move: number, game: Game, player: Player) {
     game.LegalMoveList = GenerateMoves(game.GameState)
     switch (CheckEndGame(game.GameState, game.LegalMoveList)) {
         case 1:
-            player.Connection.send("Won.")
+            player.Connection.send("You won.")
             player.Connection.close()
             return
         case 2:
@@ -101,7 +101,7 @@ export function PlayMove(move: number, game: Game, player: Player) {
     game.LegalMoveList = GenerateMoves(game.GameState)
     switch (CheckEndGame(game.GameState, game.LegalMoveList)) {
         case 1:
-            player.Connection.send("Lost.")
+            player.Connection.send("You lost.")
             player.Connection.close()
             return
         case 2:
