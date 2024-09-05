@@ -4,6 +4,7 @@ import {GenerateKnightAttackTables} from "../pieces/knight";
 import {GenerateBishopAttackTables} from "../pieces/bishop";
 import {GenerateRookAttackTables} from "../pieces/rook";
 import {GenerateLines} from "../bitboard/consts";
+import {GenerateZobristRandoms} from "../positions/init";
 
 export function StartChessEngine() {
     GeneratePawnAttackTables()
@@ -12,4 +13,5 @@ export function StartChessEngine() {
     GenerateBishopAttackTables()
     GenerateRookAttackTables()
     GenerateLines()
+    GenerateZobristRandoms()
 }

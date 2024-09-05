@@ -2,6 +2,8 @@ import {GameState} from "../engine/game";
 import {AlgebraicToIndex} from "../bitboard/conversions";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {SetBit} from "../bitboard/bit_operations";
+import {UpdatePinnedPieces} from "../moves/move";
+import {HashFromState} from "../positions/zobrist_hashing";
 /*
       A FEN string contains six fields:
       0: Pieces positions.
@@ -164,5 +166,7 @@ export function ParseFEN(game: GameState, fenString: string): number {
     game.OccupancyBoards[Side.white] = (game.PieceBitboards[Pieces.P] | game.PieceBitboards[Pieces.N] | game.PieceBitboards[Pieces.B] | game.PieceBitboards[Pieces.R] | game.PieceBitboards[Pieces.Q] | game.PieceBitboards[Pieces.K])
     game.OccupancyBoards[Side.black] = (game.PieceBitboards[Pieces.p] | game.PieceBitboards[Pieces.n] | game.PieceBitboards[Pieces.b] | game.PieceBitboards[Pieces.r] | game.PieceBitboards[Pieces.q] | game.PieceBitboards[Pieces.k])
     game.OccupancyBoards[Side.both] = (game.OccupancyBoards[Side.white] | game.OccupancyBoards[Side.black])
+    game.PinnedBoards[1 - game.SideToMove] = UpdatePinnedPieces(game)
+    game.PastPositions.unshift(HashFromState(game))
     return 0
 }

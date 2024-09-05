@@ -6,6 +6,13 @@
   import {websocket} from "@/connection/websocket.ts";
   import {PieceType} from "@/components/board/ChessPiece.ts";
   import LegalSquare from "@/components/board/LegalSquare.vue";
+  const moveSound = new Audio("/sounds/move.mp3")
+  const captureSound = new Audio("/sounds/capture.mp3")
+  const castlingSound = new Audio("/sounds/castle.mp3")
+  const promoteSound = new Audio("/sounds/promote.mp3")
+  const winningSound = new Audio("/sounds/win.mp3")
+  const losingSound = new Audio("/sounds/lose.mp3")
+  const drawingSound = new Audio("/sounds/draw.mp3")
   const legalMoves = ref(null)
   const pendingMove = ref(0)
   const promoting = ref(false)
@@ -18,6 +25,16 @@
   websocket.onmessage = (msg) => {
     if (typeof msg.data === "string") {
       console.log(msg.data.toString())
+      if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+      if (msg.data.toString() === "Won.") {
+        winningSound.play()
+      }
+      else if (msg.data.toString() === "Lost.") {
+        losingSound.play()
+      }
+      else {
+        drawingSound.play()
+      }
     }
     else {
       if (sideToMove.value !== props.side) {
@@ -144,7 +161,6 @@
       ProcessMove(move_check, pieceKey)
     }
     else {
-      console.log("Illegal move.")
       pieces.value.get(pieceKey).Selected = false
       selectingPiece.value = 0
       movableSquare.value.length = 0
@@ -179,13 +195,16 @@
     let flag = GetMoveFlag(move)
     if (flag === 4) { //Capture
       RemovePiece(targetSquare)
+      captureSound.play()
     }
-    else if (flag === 5) //En passant.
+    else if (flag === 5) { //En passant.
       if (sideToMove.value === 0) {
         RemovePiece(targetSquare + 8)
       } else {
         RemovePiece(targetSquare - 8)
       }
+      captureSound.play()
+    }
     else if (flag === 2) { //King castle.
       if (sideToMove.value === 0) {
         pieces.value.get(FindPiece(63)).Selected = true
@@ -196,6 +215,7 @@
         pieces.value.get(FindPiece(7)).Piece[2] = targetSquare - 1
         pieces.value.get(FindPiece(targetSquare - 1)).Selected = false
       }
+      castlingSound.play()
     }
     else if (flag === 3) { //Queen castle.
       if (sideToMove.value === 0) {
@@ -207,6 +227,7 @@
         pieces.value.get(FindPiece(0)).Piece[2] = targetSquare - 1
         pieces.value.get(FindPiece(targetSquare + 1)).Selected = false
       }
+      castlingSound.play()
     }
     else if (flag === 11 || flag === 15) {
       RemovePiece(targetSquare)
@@ -216,6 +237,7 @@
       } else {
         ChangePiece(1, PieceType.Queen, pieceKey)
       }
+      promoteSound.play()
     }
     else if (flag === 10 || flag === 14) {
       RemovePiece(targetSquare)
@@ -224,6 +246,7 @@
       } else {
         ChangePiece(1, PieceType.Rook, pieceKey)
       }
+      promoteSound.play()
     }
     else if (flag === 9 || flag === 13) {
       RemovePiece(targetSquare)
@@ -232,6 +255,7 @@
       } else {
         ChangePiece(1, PieceType.Bishop, pieceKey)
       }
+      promoteSound.play()
     }
     else if (flag === 8 || flag === 12) {
       RemovePiece(targetSquare)
@@ -240,6 +264,10 @@
       } else {
         ChangePiece(1, PieceType.Knight, pieceKey)
       }
+      promoteSound.play()
+    }
+    else {
+      moveSound.play()
     }
     pieces.value.get(pieceKey).Piece[2] = Number(targetSquare)
     sideToMove.value = 1 - sideToMove.value

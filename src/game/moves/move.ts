@@ -6,6 +6,7 @@ import {IsKingInCheck} from "./attacks";
 import {LinesBetween, LinesIntersect} from "../bitboard/consts";
 import {GetBishopAttacks} from "../pieces/bishop";
 import {GetRookAttacks} from "../pieces/rook";
+import {MiscellaneousKey, PiecePositionKey} from "../positions/init";
 
 export const FromSquareMask = 0x3f
 export const ToSquareMask = 0xfc0
@@ -70,8 +71,13 @@ export function GivenSquarePiece(index: bigint, bitboards: BigUint64Array, side:
             if (bitboards[i] & bit_check) return i
         }
     }
-    else {
+    else if (side === 1) {
         for (let i = 6; i < 12; i++) {
+            if (bitboards[i] & bit_check) return i
+        }
+    }
+    else if (side === -1) {
+        for (let i = 0; i < 12; i++) {
             if (bitboards[i] & bit_check) return i
         }
     }
@@ -157,31 +163,53 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
     }
     return LegalMoves
 }
+export function UpdatePinnedPieces(game: GameState): bigint {
+    let kingIndex = LeastSignificantOneIndex(game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K])
+    let attack_map = (GetRookAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.R : Pieces.r] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
+        | (GetBishopAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.B : Pieces.b] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
+    let pinned_map: bigint = 0n
+    while(attack_map) {
+        let sniper = LeastSignificantOneIndex(attack_map)
+        let intersection = LinesBetween[Number(sniper)][Number(kingIndex)] & game.OccupancyBoards[game.SideToMove]
+        if (CountSetBit(intersection) === 1n) {
+            pinned_map |= intersection
+        }
+        attack_map = ClearBit(attack_map, sniper)
+    }
+    return pinned_map
+}
 export function ExecuteMove(gameInfo: GameState, move: number): GameState {
     let game = structuredClone(gameInfo)
     let flag = GetMoveFlag(move)
     let source = BigInt(GetMoveSource(move))
     let target = BigInt(GetMoveTarget(move))
     game.EnPassantSquare = -1
+    let ZobristHash = game.PastPositions[0]
     if (game.SideToMove === Side.black) game.FullMoves++
     let movePiece = GivenSquarePiece(source, game.PieceBitboards, game.SideToMove)
     if (movePiece === Pieces.K) {
         game.CastlingRight = (game.CastlingRight & 0b1100)
+        ZobristHash = ZobristHash ^ MiscellaneousKey[0] ^ MiscellaneousKey[1]
     } else if (movePiece === Pieces.k) {
         game.CastlingRight = (game.CastlingRight & 0b0011)
+        ZobristHash = ZobristHash ^ MiscellaneousKey[2] ^ MiscellaneousKey[3]
     } else if (movePiece === Pieces.R) {
         if (source === 63n && (game.CastlingRight & CastlingRights.WhiteKing)){
             game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteKing
+            ZobristHash = ZobristHash ^ MiscellaneousKey[0]
         }
         else if (source === 56n && (game.CastlingRight & CastlingRights.WhiteQueen)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteQueen
+            ZobristHash = ZobristHash ^ MiscellaneousKey[1]
         }
     } else if (movePiece === Pieces.r) {
         if (source === 7n && (game.CastlingRight & CastlingRights.BlackKing)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackKing
+            ZobristHash = ZobristHash ^ MiscellaneousKey[2]
         }
         else if (source === 0n && (game.CastlingRight & CastlingRights.BlackQueen)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackQueen
+            ZobristHash = ZobristHash ^ MiscellaneousKey[3]
         }
     }
     if (flag === MoveFlags.capture || flag === MoveFlags.queen_promo_capture ||
@@ -191,26 +219,35 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
         let targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
         if (targetPiece === Pieces.R && target === 63n && (game.CastlingRight & CastlingRights.WhiteKing)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteKing
+            ZobristHash = ZobristHash ^ MiscellaneousKey[0]
         }
         else if (targetPiece === Pieces.R && target === 56n && (game.CastlingRight & CastlingRights.WhiteQueen)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteQueen
+            ZobristHash = ZobristHash ^ MiscellaneousKey[1]
         }
         else if (targetPiece === Pieces.r && target === 7n && (game.CastlingRight & CastlingRights.BlackKing)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackKing
+            ZobristHash = ZobristHash ^ MiscellaneousKey[2]
         }
         else if (targetPiece === Pieces.r && target === 0n && (game.CastlingRight & CastlingRights.BlackQueen)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackQueen
+            ZobristHash = ZobristHash ^ MiscellaneousKey[3]
         }
     }
     let targetPiece
     switch (flag) {
         case MoveFlags.quiet_moves:
-            if (movePiece === Pieces.P || movePiece === Pieces.p) game.HalfMoves = 0
+            if (movePiece === Pieces.P || movePiece === Pieces.p) {
+                game.HalfMoves = 0
+                game.PastPositions.length = 0
+            }
             else game.HalfMoves++
             game.PieceBitboards[movePiece] = ClearBit(game.PieceBitboards[movePiece], source)
             game.PieceBitboards[movePiece] = SetBit(game.PieceBitboards[movePiece], target)
             game.OccupancyBoards[game.SideToMove] = ClearBit(game.OccupancyBoards[game.SideToMove], source)
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[movePiece][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 4 : 5] ^ MiscellaneousKey[game.SideToMove ? 5 : 4]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.capture:
             targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
@@ -221,6 +258,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[movePiece][Number(target)] ^ PiecePositionKey[targetPiece][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.double_push:
             game.PieceBitboards[movePiece] = ClearBit(game.PieceBitboards[movePiece], source)
@@ -229,6 +269,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.EnPassantSquare = game.SideToMove ? Number(target) - 8 : Number(target) + 8
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[movePiece][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.queen_castle:
             game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K] = RightShift(game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K], 2n)
@@ -240,6 +283,10 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 58n)
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 59n)
                 game.CastlingRight = game.CastlingRight & 0b1100
+                game.PastPositions.length = 0
+                ZobristHash = ZobristHash ^ PiecePositionKey[Pieces.R][56] ^ PiecePositionKey[Pieces.R][59] ^ PiecePositionKey[Pieces.K][60] ^ PiecePositionKey[Pieces.K][58] ^ MiscellaneousKey[game.SideToMove ? 4 : 5] ^ MiscellaneousKey[game.SideToMove ? 5 : 4]
+                ^ MiscellaneousKey[0] ^ MiscellaneousKey [1]
+                game.PastPositions.unshift(ZobristHash)
             }
             else {
                 game.PieceBitboards[Pieces.r] = ClearBit(game.PieceBitboards[Pieces.r], 0n)
@@ -249,6 +296,10 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 2n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 3n)
                 game.CastlingRight = game.CastlingRight & 0b0011
+                game.PastPositions.length = 0
+                ZobristHash = ZobristHash ^ PiecePositionKey[Pieces.r][0] ^ PiecePositionKey[Pieces.r][3] ^ PiecePositionKey[Pieces.k][4] ^ PiecePositionKey[Pieces.k][2] ^ MiscellaneousKey[game.SideToMove ? 4 : 5] ^ MiscellaneousKey[game.SideToMove ? 5 : 4]
+                    ^ MiscellaneousKey[2] ^ MiscellaneousKey [3]
+                game.PastPositions.unshift(ZobristHash)
             }
             game.HalfMoves++
             break
@@ -262,6 +313,10 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 61n)
                 game.OccupancyBoards[Side.white] = SetBit(game.OccupancyBoards[Side.white], 62n)
                 game.CastlingRight = game.CastlingRight & 0b1100
+                game.PastPositions.length = 0
+                ZobristHash = ZobristHash ^ PiecePositionKey[Pieces.R][63] ^ PiecePositionKey[Pieces.R][61] ^ PiecePositionKey[Pieces.K][60] ^ PiecePositionKey[Pieces.K][62] ^ MiscellaneousKey[game.SideToMove ? 4 : 5] ^ MiscellaneousKey[game.SideToMove ? 5 : 4]
+                    ^ MiscellaneousKey[0] ^ MiscellaneousKey [1]
+                game.PastPositions.unshift(ZobristHash)
             }
             else {
                 game.PieceBitboards[Pieces.r] = ClearBit(game.PieceBitboards[Pieces.r], 7n)
@@ -271,6 +326,10 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 5n)
                 game.OccupancyBoards[Side.black] = SetBit(game.OccupancyBoards[Side.black], 6n)
                 game.CastlingRight = game.CastlingRight & 0b0011
+                game.PastPositions.length = 0
+                ZobristHash = ZobristHash ^ PiecePositionKey[Pieces.r][7] ^ PiecePositionKey[Pieces.r][5] ^ PiecePositionKey[Pieces.k][4] ^ PiecePositionKey[Pieces.k][6] ^ MiscellaneousKey[game.SideToMove ? 4 : 5] ^ MiscellaneousKey[game.SideToMove ? 5 : 4]
+                    ^ MiscellaneousKey[2] ^ MiscellaneousKey [3]
+                game.PastPositions.unshift(ZobristHash)
             }
             game.HalfMoves++
             break
@@ -284,6 +343,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[targetPawn] = ClearBit(game.PieceBitboards[targetPawn], targetPosition)
             game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], targetPosition)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[movePiece][Number(target)] ^ PiecePositionKey[targetPawn][Number(targetPosition)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.knight_promotion:
             let knightType = game.SideToMove ? Pieces.n : Pieces.N
@@ -292,6 +354,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[knightType] = SetBit(game.PieceBitboards[knightType], target)
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[knightType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.rook_promotion:
             let rookType = game.SideToMove ? Pieces.r : Pieces.R
@@ -300,6 +365,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[rookType] = SetBit(game.PieceBitboards[rookType], target)
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[rookType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.bishop_promotion:
             let bishopType = game.SideToMove ? Pieces.b : Pieces.B
@@ -308,6 +376,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[bishopType] = SetBit(game.PieceBitboards[bishopType], target)
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[bishopType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.queen_promotion:
             let queenType = game.SideToMove ? Pieces.q : Pieces.Q
@@ -316,6 +387,9 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[queenType] = SetBit(game.PieceBitboards[queenType], target)
             game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[queenType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.knight_promo_capture:
             targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
@@ -327,21 +401,13 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[targetPiece] = ClearBit(game.PieceBitboards[targetPiece], target)
             game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[targetPiece][Number(target)] ^ PiecePositionKey[kType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.rook_promo_capture:
             targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
-            let bType = game.SideToMove ? Pieces.r : Pieces.R
-            game.PieceBitboards[movePiece] = ClearBit(game.PieceBitboards[movePiece], source)
-            game.OccupancyBoards[game.SideToMove] = ClearBit(game.OccupancyBoards[game.SideToMove], source)
-            game.PieceBitboards[bType] = SetBit(game.PieceBitboards[bType], target)
-            game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
-            game.PieceBitboards[targetPiece] = ClearBit(game.PieceBitboards[targetPiece], target)
-            game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
-            game.HalfMoves = 0
-            break
-        case MoveFlags.bishop_promo_capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
-            let rType = game.SideToMove ? Pieces.b : Pieces.B
+            let rType = game.SideToMove ? Pieces.r : Pieces.R
             game.PieceBitboards[movePiece] = ClearBit(game.PieceBitboards[movePiece], source)
             game.OccupancyBoards[game.SideToMove] = ClearBit(game.OccupancyBoards[game.SideToMove], source)
             game.PieceBitboards[rType] = SetBit(game.PieceBitboards[rType], target)
@@ -349,6 +415,23 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[targetPiece] = ClearBit(game.PieceBitboards[targetPiece], target)
             game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[targetPiece][Number(target)] ^ PiecePositionKey[rType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
+            break
+        case MoveFlags.bishop_promo_capture:
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            let bType = game.SideToMove ? Pieces.b : Pieces.B
+            game.PieceBitboards[movePiece] = ClearBit(game.PieceBitboards[movePiece], source)
+            game.OccupancyBoards[game.SideToMove] = ClearBit(game.OccupancyBoards[game.SideToMove], source)
+            game.PieceBitboards[bType] = SetBit(game.PieceBitboards[bType], target)
+            game.OccupancyBoards[game.SideToMove] = SetBit(game.OccupancyBoards[game.SideToMove], target)
+            game.PieceBitboards[targetPiece] = ClearBit(game.PieceBitboards[targetPiece], target)
+            game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
+            game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[targetPiece][Number(target)] ^ PiecePositionKey[bType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.queen_promo_capture:
             targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
@@ -360,23 +443,14 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PieceBitboards[targetPiece] = ClearBit(game.PieceBitboards[targetPiece], target)
             game.OccupancyBoards[1 - game.SideToMove] = ClearBit(game.OccupancyBoards[1 - game.SideToMove], target)
             game.HalfMoves = 0
+            game.PastPositions.length = 0
+            ZobristHash = ZobristHash ^ PiecePositionKey[movePiece][Number(source)] ^ PiecePositionKey[targetPiece][Number(target)] ^ PiecePositionKey[qType][Number(target)] ^ MiscellaneousKey[game.SideToMove ? 5 : 4] ^ MiscellaneousKey[game.SideToMove ? 4 : 5]
+            game.PastPositions.unshift(ZobristHash)
             break
     }
     game.OccupancyBoards[Side.both] = (game.OccupancyBoards[Side.white] | game.OccupancyBoards[Side.black])
     game.SideToMove = 1 - game.SideToMove
-    let kingIndex = LeastSignificantOneIndex(game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K])
-    let attack_map = (GetRookAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.R : Pieces.r] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
-        | (GetBishopAttacks(kingIndex, game.OccupancyBoards[1 - game.SideToMove]) & (game.PieceBitboards[game.SideToMove ? Pieces.B : Pieces.b] | game.PieceBitboards[game.SideToMove ? Pieces.Q : Pieces.q]))
-    let pinned_map: bigint = 0n
-    while(attack_map) {
-        let sniper = LeastSignificantOneIndex(attack_map)
-        let intersection = LinesBetween[Number(sniper)][Number(kingIndex)] & game.OccupancyBoards[game.SideToMove]
-        if (CountSetBit(intersection) === 1n) {
-            pinned_map |= intersection
-        }
-        attack_map = ClearBit(attack_map, sniper)
-    }
-    game.PinnedBoards[game.SideToMove] = pinned_map
+    game.PinnedBoards[game.SideToMove] = UpdatePinnedPieces(game)
     return game
 }
 

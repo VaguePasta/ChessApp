@@ -16,6 +16,7 @@ export interface GameState {
     CastlingRight: number;
     HalfMoves: number;
     FullMoves: number
+    PastPositions: Array<bigint>
 }
 export function NewGame(FEN: string): Game|null {
     let game = {
@@ -28,6 +29,7 @@ export function NewGame(FEN: string): Game|null {
             CastlingRight: new Uint8Array([0b1111])[0],
             HalfMoves: 0,
             FullMoves: 1,
+            PastPositions: new Array<bigint>()
         },
         LegalMoveList: {moves: new Uint16Array(218), count: 0}
     }

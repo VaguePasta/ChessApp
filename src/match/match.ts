@@ -64,6 +64,14 @@ function CheckEndGame(gameState: GameState, legalMoveList: MoveList) {
             return 5
         }
     }
+    if (gameState.PastPositions.length >= 9) {
+        let counter = 1
+        for (let i = 0; i < gameState.PastPositions.length; i+=4) {
+            if (gameState.PastPositions[0] !== gameState.PastPositions[i]) break
+            else counter++
+        }
+        if (counter >= 3) return 4
+    }
     return 0
 }
 export function PlayMove(move: number, game: Game, player: Player) {
@@ -102,6 +110,10 @@ export function PlayMove(move: number, game: Game, player: Player) {
             return
         case 3:
             player.Connection.send("Draw by fifty-move rule.")
+            player.Connection.close()
+            return
+        case 4:
+            player.Connection.send("Draw by threefold repetition.")
             player.Connection.close()
             return
         case 5:
