@@ -7,6 +7,8 @@
   import {PieceType} from "@/components/board/ChessPiece.ts";
   import LegalSquare from "@/components/board/LegalSquare.vue";
   import {useRouter} from "vue-router";
+  import CoordinatesY from "@/components/board/CoordinatesY.vue";
+  import CoordinatesX from "@/components/board/CoordinatesX.vue";
   const moveSound = new Audio("/sounds/move.mp3")
   const captureSound = new Audio("/sounds/capture.mp3")
   const castlingSound = new Audio("/sounds/castle.mp3")
@@ -24,29 +26,72 @@
   const selectingPiece = ref(0)
   const movableSquare = ref([])
   const result = ref(null)
-  websocket.onmessage = (msg) => {
-    if (typeof msg.data === "string") {
-      result.value = msg.data.toString()
-      if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
-      if (msg.data.toString() === "Won.") {
-        winningSound.play()
-      }
-      else if (msg.data.toString() === "Lost.") {
-        losingSound.play()
+  const connectionLost = ref(null)
+  if (props.side === 0) {
+    websocket.onmessage = (msg) => {
+    legalMoves.value = new Uint16Array(msg.data)
+    websocket.onmessage = (msg) => {
+      if (typeof msg.data === "string") {
+        if (msg.data === "The other player has lost connection.") {
+          connectionLost.value = msg.data
+          return
+        }
+        websocket.onclose = () => {}
+        result.value = msg.data.toString()
+        if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+        if (msg.data.toString() === "You won.") {
+          winningSound.play()
+        }
+        else if (msg.data.toString() === "You lost.") {
+          losingSound.play()
+        }
+        else {
+          drawingSound.play()
+        }
       }
       else {
-        drawingSound.play()
+        if (sideToMove.value !== props.side) {
+          let moves = new Uint16Array(msg.data)
+          let move = moves[0]
+          Move(move, false)
+          legalMoves.value = moves.slice(1)
+        }
       }
     }
-    else {
-      if (sideToMove.value !== props.side) {
-        let move = new Uint16Array(msg.data)[0]
-        Move(move, false)
+  }
+  }
+  else {
+    websocket.onmessage = (msg) => {
+      if (typeof msg.data === "string") {
+        if (msg.data === "The other player has lost connection.") {
+          connectionLost.value = msg.data
+          return
+        }
+        websocket.onclose = () => {}
+        result.value = msg.data.toString()
+        if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+        if (msg.data.toString() === "You won.") {
+          winningSound.play()
+        }
+        else if (msg.data.toString() === "You lost.") {
+          losingSound.play()
+        }
+        else {
+          drawingSound.play()
+        }
       }
       else {
-        legalMoves.value = new Uint16Array(msg.data)
+        if (sideToMove.value !== props.side) {
+          let moves = new Uint16Array(msg.data)
+          let move = moves[0]
+          Move(move, false)
+          legalMoves.value = moves.slice(1)
+        }
       }
     }
+  }
+  websocket.onclose = () => {
+    connectionLost.value = "Connection lost."
   }
   function MoveIsLegal(move): number {
     if (props.side !== sideToMove.value) return move
@@ -226,7 +271,7 @@
         pieces.value.get(FindPiece(targetSquare + 1)).Selected = false
       } else {
         pieces.value.get(FindPiece(0)).Selected = true
-        pieces.value.get(FindPiece(0)).Piece[2] = targetSquare - 1
+        pieces.value.get(FindPiece(0)).Piece[2] = targetSquare + 1
         pieces.value.get(FindPiece(targetSquare + 1)).Selected = false
       }
       castlingSound.play()
@@ -332,12 +377,17 @@
   }
   const router = useRouter()
   function returnToMenu() {
+    pieces.value.clear()
     router.push({path : "/"})
   }
   websocket.send("ok")
 </script>
 
 <template>
+  <CoordinatesY style="left: 24vw; transform: translateY(-50%);" :side="side.value"/>
+  <CoordinatesY style="left: 70vw; transform: translateY(-50%);" :side="side.value"/>
+  <CoordinatesX style="top: 1vh" :side="side.value"/>
+  <CoordinatesX style="top: 95.5vh" :side="side.value"/>
   <div class="board" @click="PlayerMove">
     <Piece @selecting-piece="SelectingPiece" v-for="piece in pieces" :side="props.side" :sideToMove="sideToMove" :information="piece[1]" :key="piece[0]"/>
     <div v-if="promoting" class="promotion-popup">
@@ -358,9 +408,14 @@
     <div v-if="promoting || (result !== null)" class="modal-mask"/>
 
     <div v-if="result !== null" class="end-popup">
-      <div style="font-size: 25px; padding-bottom: 5px;">The game has concluded.</div>
-      <div style="font-size: 20px; padding-bottom: 5px;">{{result}}</div>
+      <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
+      <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
       <button @click="returnToMenu" class="end-button">Back to main menu</button>
+    </div>
+
+    <div v-if="connectionLost !== null" class="end-popup">
+      <div style="font-size: 3.5vh; padding-bottom: 1vh;">{{connectionLost}}</div>
+      <button @click="returnToMenu" class="end-button">Back to main menu.</button>
     </div>
   </div>
 </template>
@@ -382,13 +437,13 @@
 .end-button {
   background-color: #81b64c;
   border: none;
-  padding: 7px;
+  padding: 1vh;
   font-family: "Open Sans", sans-serif;
   font-optical-sizing: auto;
   font-weight: 300;
   font-style: normal;
   font-variation-settings: "wdth" 100;
-  font-size: 16px;
+  font-size: 2vh;
   border-radius: 5px;
 }
 .end-button:hover {
@@ -406,7 +461,8 @@
   top: 50%;
   transform: translate(-50%, -50%);
   z-index: 4;
-  width: 60%;
+  width: 30vw;
+  height: 18vh;
   border-radius: 10px;
   padding: 15px;
   box-sizing: border-box;

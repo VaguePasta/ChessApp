@@ -1,61 +1,72 @@
 <script setup>
   import {useRouter} from "vue-router";
-  import {LogIn} from "@/connection/login.ts";
-  import {gameToken, server, setGameToken, websocket, WebSocketConnect} from "@/connection/websocket.ts";
+  import {websocket, WebSocketConnect} from "@/connection/websocket.ts";
   import {ref} from "vue";
-  const side = ref("")
-  const askSide = ref(false)
+  const finding = ref(false)
   const router = useRouter()
+  const gameToken = ref(null)
+  const waiting = ref(false)
   function Login() {
-    if (side.value === "") {
-      askSide.value = true
-      return
+    WebSocketConnect("match")
+    websocket.onopen = () => {
+      finding.value = true
     }
-    let ok = LogIn()
-    if (!ok) return
-    fetch(server + 'new', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain'
-      },
-      body: ""
-    }).then((res) => {
-      if (res.ok) {
-        res.text().then((data) => {
-          let gameData = JSON.parse(data)
-          WebSocketConnect(gameData[0] + side.value)
-          websocket.onopen = () => {
-            setGameToken(gameData[0])
-            router.push({path: "/game", query: {g: side.value, p: gameData[1]}})
+    websocket.onclose = () => {
+      finding.value = false
+    }
+    websocket.onmessage = (token) => {
+      websocket.close()
+      gameToken.value = token.data
+    }
+  }
+  function AcceptMatch() {
+    WebSocketConnect("game/" + gameToken.value)
+    websocket.onopen = () => {
+      waiting.value = true
+      websocket.onmessage = (ok) => {
+        if (ok.data === "ok") {
+          websocket.onmessage = (config) => {
+            finding.value = false
+            router.push({path: "/game", query: {p: config.data.slice(0, -1), g: config.data[config.data.length - 1]}})
           }
-        })
+        }
       }
-    })
+    }
+    gameToken.value = null
   }
-  function whiteClick() {
-    side.value = "0"
-    askSide.value = false
-    Login()
+  function StopSearch() {
+    websocket.close()
   }
-  function blackClick() {
-    side.value = "1"
-    askSide.value = false
-    Login()
+  function RefuseMatch() {
+    gameToken.value = null
+  }
+  function QuitWaiting() {
+    waiting.value = false
+    websocket.close()
   }
 </script>
 
 <template>
   <div>
-    <div v-if="askSide" class="new-popup">
-      <div style="padding-bottom: 10px">Do you want to play as:</div>
-      <div style="display: flex; align-items: center; justify-content: center">
-        <button @click="whiteClick" class="pick-button white">White</button>
-        <div style="padding: 5px">or</div>
-        <button @click="blackClick" class="pick-button black">Black</button>
+    <div v-if="finding" class="new-popup">
+      <div style="display: flex; align-items: center; justify-content: center; flex-direction: column">
+        <div style="padding: 5px">Finding opponent...</div>
+        <button @click="StopSearch" class="pick-button">Quit searching</button>
       </div>
     </div>
-    <div v-if="askSide" class="new-mask"/>
-    <button @click="Login">Log in</button>
+    <div v-if="finding" class="new-mask"/>
+    <div v-if="gameToken !== null" class="new-popup">
+      <div style="display: flex; align-items: center; justify-content: center; flex-direction: column">
+        <div style="padding: 5px">Opponent found. Enter match?</div>
+        <button @click="AcceptMatch" class="pick-button">Yes</button>
+        <button @click="RefuseMatch" class="pick-button">No</button>
+      </div>
+    </div>
+    <div v-if="waiting" class="new-popup">
+      <div style="padding: 5px">Waiting for opponent...</div>
+      <button @click="QuitWaiting" class="pick-button">Quit waiting.</button>
+    </div>
+    <button @click="Login">New game</button>
   </div>
 </template>
 
@@ -105,13 +116,8 @@
   font-size: 16px;
   border-radius: 5px;
 }
-.white:hover {
-  background-color: white;
-  color: black;
-}
-.black:hover {
-  background-color: black;
-  color: white;
+.pick-button:hover {
+  background-color: #a3d160;
 }
 .new-mask {
   position: absolute;

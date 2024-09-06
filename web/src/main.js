@@ -5,7 +5,6 @@ import Game from "@/components/board/Game.vue";
 import {createMemoryHistory, createRouter} from "vue-router";
 const routes = [
     { path: '/game', component: Game, props: route => ({side : parseInt(route.query.g), pos: route.query.p})},
-    { path: '/login', component: LogIn },
     { path: '/', component: LogIn}
 ]
 const router = createRouter({

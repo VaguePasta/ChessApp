@@ -1,4 +1,4 @@
-import {Game, GameState, NewGame} from "../game/engine/game";
+import {FENStart, Game, GameState, NewGame} from "../game/engine/game";
 import {ExecuteMove, MoveList} from "../game/moves/move";
 import {GenerateMoves} from "../game/moves/movegen";
 import {IsKingInCheck} from "../game/moves/attacks";
@@ -23,6 +23,79 @@ export function NewMatch(token: string, FEN: string, player1: Player, player2: P
         return true
     }
     else return false
+}
+export function StartMatch(match: Match | undefined) {
+    if (match === undefined) return
+    match.Players[0].Connection.send(FENStart + match.Players[0].Side)
+    match.Players[1].Connection.send(FENStart + match.Players[1].Side)
+    match.Players.forEach((value, index) => {
+        value.Connection.on('message', (data: any) => {
+            if (data.toString() === "ok") {
+                let game = match.Game
+                if (!value.Side) {
+                    game.LegalMoveList = GenerateMoves(game.GameState)
+                    value.Connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+                }
+                value.Connection.on('message', (data: any) => {
+                    if (game.GameState.SideToMove === value.Side) {
+                        switch(PlayMove(parseInt(data), match.Game)) {
+                            case 1:
+                                match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
+                                match.Players[index].Connection.send("You won.")
+                                match.Players[1 - index].Connection.send("You lost.")
+                                match.Players[0].Connection.close()
+                                match.Players[1].Connection.close()
+                                Matches.delete(match.Token)
+                                break
+                            case 2:
+                                match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
+                                match.Players[0].Connection.send("Stalemate.")
+                                match.Players[1].Connection.send("Stalemate.")
+                                match.Players[0].Connection.close()
+                                match.Players[1].Connection.close()
+                                Matches.delete(match.Token)
+                                break
+                            case 3:
+                                match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
+                                match.Players[0].Connection.send("Draw by 50-move rule.")
+                                match.Players[1].Connection.send("Draw by 50-move rule.")
+                                match.Players[0].Connection.close()
+                                match.Players[1].Connection.close()
+                                Matches.delete(match.Token)
+                                break
+                            case 4:
+                                match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
+                                match.Players[0].Connection.send("Draw by threefold repetition.")
+                                match.Players[1].Connection.send("Draw by threefold repetition.")
+                                match.Players[0].Connection.close()
+                                match.Players[1].Connection.close()
+                                Matches.delete(match.Token)
+                                break
+                            case 5:
+                                match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
+                                match.Players[0].Connection.send("Draw by insufficient material.")
+                                match.Players[1].Connection.send("Draw by insufficient material.")
+                                match.Players[0].Connection.close()
+                                match.Players[1].Connection.close()
+                                Matches.delete(match.Token)
+                                break
+                            case 0:
+                                game.LegalMoveList = GenerateMoves(game.GameState)
+                                let moves = new Uint16Array(game.LegalMoveList.count + 1)
+                                moves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
+                                moves[0] = parseInt(data)
+                                match.Players[1 - index].Connection.send(moves)
+                        }
+                    }
+                })
+                value.Connection.on('close', () => {
+                    match.Players[1 - index].Connection.send("The other player has lost connection.")
+                    match.Players[1 - index].Connection.close()
+                })
+            }
+        })
+    })
+
 }
 /*
     0: The game continues.
@@ -74,52 +147,8 @@ function CheckEndGame(gameState: GameState, legalMoveList: MoveList) {
     }
     return 0
 }
-export function PlayMove(move: number, game: Game, player: Player) {
+export function PlayMove(move: number, game: Game) {
     game.GameState = ExecuteMove(game.GameState, move)
     game.LegalMoveList = GenerateMoves(game.GameState)
-    switch (CheckEndGame(game.GameState, game.LegalMoveList)) {
-        case 1:
-            player.Connection.send("You won.")
-            player.Connection.close()
-            return
-        case 2:
-            player.Connection.send("Stalemate.")
-            player.Connection.close()
-            return
-        case 3:
-            player.Connection.send("Draw by fifty-move rule.")
-            player.Connection.close()
-            return
-        case 5:
-            player.Connection.send("Draw by insufficient material.")
-            player.Connection.close()
-            return
-    }
-    let responseMove = game.LegalMoveList.moves[Math.floor(Math.random() * game.LegalMoveList.count)]
-    player.Connection.send(new Uint16Array([responseMove]).buffer)
-    game.GameState = ExecuteMove(game.GameState, responseMove)
-    game.LegalMoveList = GenerateMoves(game.GameState)
-    switch (CheckEndGame(game.GameState, game.LegalMoveList)) {
-        case 1:
-            player.Connection.send("You lost.")
-            player.Connection.close()
-            return
-        case 2:
-            player.Connection.send("Stalemate.")
-            player.Connection.close()
-            return
-        case 3:
-            player.Connection.send("Draw by fifty-move rule.")
-            player.Connection.close()
-            return
-        case 4:
-            player.Connection.send("Draw by threefold repetition.")
-            player.Connection.close()
-            return
-        case 5:
-            player.Connection.send("Draw by insufficient material.")
-            player.Connection.close()
-            return
-    }
-    player.Connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+    return CheckEndGame(game.GameState, game.LegalMoveList)
 }
