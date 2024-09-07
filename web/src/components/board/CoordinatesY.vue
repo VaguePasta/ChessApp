@@ -1,11 +1,11 @@
-<script setup lang="ts">
+<script setup>
   const props = defineProps(['side'])
 </script>
 
 <template>
   <div class="coordinate" style="width: 10vh; height: 90vh; position: absolute; display: flex; flex-direction: column; top: 50%; align-items: center">
     <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.side ? 1: 8}}</div>
-    <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.sideside ? 2: 7}}</div>
+    <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.side ? 2: 7}}</div>
     <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.side ? 3: 6}}</div>
     <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.side ? 4: 5}}</div>
     <div style="height: 11.25vh; display: flex; align-items: center; font-size: 2.5vh;">{{!props.side ? 5: 4}}</div>

@@ -1,10 +1,9 @@
-<script setup lang="ts">
+<script setup>
   import Piece from "./Piece.vue";
   import {ref} from "vue";
-  import {ParseFEN} from "./FEN.ts";
-  import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "./Moves.ts";
-  import {websocket} from "@/connection/websocket.ts";
-  import {PieceType} from "@/components/board/ChessPiece.ts";
+  import {ParseFEN} from "./FEN.js";
+  import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "./Moves.js";
+  import {websocket} from "@/connection/websocket.js";
   import LegalSquare from "@/components/board/LegalSquare.vue";
   import {useRouter} from "vue-router";
   import CoordinatesY from "@/components/board/CoordinatesY.vue";
@@ -21,7 +20,7 @@
   const promoting = ref(false)
   const props = defineProps(['side', 'pos'])
   let gameState = ParseFEN(props.pos)
-  const pieces: any = ref(gameState[0]);
+  const pieces = ref(gameState[0]);
   const sideToMove = ref(gameState[1])
   const selectingPiece = ref(0)
   const movableSquare = ref([])
@@ -93,7 +92,7 @@
   websocket.onclose = () => {
     connectionLost.value = "Connection lost."
   }
-  function MoveIsLegal(move): number {
+  function MoveIsLegal(move) {
     if (props.side !== sideToMove.value) return move
     else {
       if (legalMoves.value !== null) {
@@ -108,7 +107,7 @@
       return -1
     }
   }
-  function SelectingPiece(event: any, pieceNumber: number) {
+  function SelectingPiece(event, pieceNumber) {
     if (props.side !== sideToMove.value) return
     if (selectingPiece.value === 0) {
       selectingPiece.value = pieceNumber
@@ -153,7 +152,7 @@
     if (pieceKey !== -1)
       pieces.value.delete(pieceKey)
   }
-  function FindPiece(square): number {
+  function FindPiece(square) {
     for (let [, value] of pieces.value) {
       if ((value.Piece[2]) === square) {
         return value.Piece[0]
@@ -161,7 +160,7 @@
     }
     return -1
   }
-  function ConfirmMove(move: number): number {
+  function ConfirmMove(move) {
     let pieceKey = FindPiece(GetSourceSquare(move))
     let targetSquare = GetTargetSquare(move)
     if (props.side === 0) {
@@ -184,7 +183,7 @@
       }
     }
   }
-  function Move(move: number, check): number {
+  function Move(move, check) {
     let sourceSquare = GetSourceSquare(move)
     let pieceKey = -1
     if (selectingPiece.value !== 0) {
@@ -215,7 +214,7 @@
     }
     return move_check
   }
-  function PlayerMove(event: any) {
+  function PlayerMove(event) {
     event.preventDefault()
     event.stopPropagation()
     if (selectingPiece.value !== 0) {
@@ -237,7 +236,7 @@
       websocket.send(send_move)
     }
   }
-  function ProcessMove(move, pieceKey): void {
+  function ProcessMove(move, pieceKey) {
     let targetSquare = GetTargetSquare(move)
     let flag = GetMoveFlag(move)
     if (flag === 4) { //Capture
@@ -280,36 +279,36 @@
       RemovePiece(targetSquare)
       RemovePiece(targetSquare)
       if (sideToMove.value === 0) {
-        ChangePiece(0, PieceType.Queen, pieceKey)
+        ChangePiece(0, 4, pieceKey)
       } else {
-        ChangePiece(1, PieceType.Queen, pieceKey)
+        ChangePiece(1, 4, pieceKey)
       }
       promoteSound.play()
     }
     else if (flag === 10 || flag === 14) {
       RemovePiece(targetSquare)
       if (sideToMove.value === 0) {
-        ChangePiece(0, PieceType.Rook, pieceKey)
+        ChangePiece(0, 3, pieceKey)
       } else {
-        ChangePiece(1, PieceType.Rook, pieceKey)
+        ChangePiece(1, 3, pieceKey)
       }
       promoteSound.play()
     }
     else if (flag === 9 || flag === 13) {
       RemovePiece(targetSquare)
       if (sideToMove.value === 0) {
-        ChangePiece(0, PieceType.Bishop, pieceKey)
+        ChangePiece(0, 2, pieceKey)
       } else {
-        ChangePiece(1, PieceType.Bishop, pieceKey)
+        ChangePiece(1, 2, pieceKey)
       }
       promoteSound.play()
     }
     else if (flag === 8 || flag === 12) {
       RemovePiece(targetSquare)
       if (sideToMove.value === 0) {
-        ChangePiece(0, PieceType.Knight, pieceKey)
+        ChangePiece(0, 1, pieceKey)
       } else {
-        ChangePiece(1, PieceType.Knight, pieceKey)
+        ChangePiece(1, 1, pieceKey)
       }
       promoteSound.play()
     }

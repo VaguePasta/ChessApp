@@ -18,13 +18,43 @@ export function ProcessMatchmakingRequest(ws: any) {
         Lobby.set(token, {
             Token: token,
             Player1: null,
-            Player2: null
+            Player2: null,
         })
         MatchQueue[0].ws.send(token)
-        MatchQueue[0].ws.close()
+        MatchQueue[0].ws.on('message', (data: any) => {
+            if (data.toString() === "Refused.") {
+                let lobby = Lobby.get(token)
+                if (lobby) {
+                    if (lobby.Player1) {
+                        lobby.Player1.send("Match cancelled.")
+                        ws.close()
+                    }
+                    else if (lobby.Player2) {
+                        lobby.Player1.send("Match cancelled.")
+                        ws.close()
+                    }
+                    Lobby.delete(token)
+                }
+            }
+        })
         MatchQueue.shift()
         ws.send(token)
-        ws.close()
+        ws.on('message', (data: any) => {
+            if (data.toString() === "Refused.") {
+                let lobby = Lobby.get(token)
+                if (lobby) {
+                    if (lobby.Player1) {
+                        lobby.Player1.send("Match cancelled.")
+                        ws.close()
+                    }
+                    else if (lobby.Player2) {
+                        lobby.Player1.send("Match cancelled.")
+                        ws.close()
+                    }
+                    Lobby.delete(token)
+                }
+            }
+        })
     }
     else {
         MatchQueue.push({
@@ -44,10 +74,20 @@ export function ProcessMatchmakingRequest(ws: any) {
 }
 export function ConnectToLobby(ws: any, token: any): void {
     let lobby = Lobby.get(token)
-    if (lobby === undefined) return
+    if (lobby === undefined) {
+        ws.send("Match cancelled.")
+        ws.close()
+        return
+    }
     ws.on('exit',(lobby: WaitingRoom) => {
-        lobby.Player1.close()
-        lobby.Player2.close()
+        if (lobby.Player1) {
+            lobby.Player1.send("Match cancelled.")
+            lobby.Player1.close()
+        }
+        if (lobby.Player2) {
+            lobby.Player2.send("Match cancelled.")
+            lobby.Player2.close()
+        }
         Lobby.delete(lobby.Token)
     })
     ws.on('close', () => {

@@ -1,7 +1,5 @@
-import type {ChessPiece} from "./ChessPiece";
-import {PieceType} from "./ChessPiece";
-export function ParseFEN(FEN: string) {
-    let pieces = new Map<number, ChessPiece>();
+export function ParseFEN(FEN) {
+    let pieces = new Map();
     let counter = 0
     let pieceCount = 1
     /*
@@ -20,7 +18,7 @@ export function ParseFEN(FEN: string) {
         if (currentChar >= '1' && currentChar <= '8') {
             counter += parseInt(currentChar)
         } else if (currentChar === 'p') {
-            let pieceInfo: Uint8Array = new Uint8Array([pieceCount, PieceType.Pawn + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 8, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -28,7 +26,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'P') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Pawn, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 0, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -36,7 +34,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'N') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Knight, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 1, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -44,7 +42,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'n') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Knight + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 9, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -52,7 +50,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'R') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Rook, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 3, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -60,7 +58,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'r') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Rook + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 11, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -68,7 +66,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'B') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Bishop, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 2, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -76,7 +74,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'b') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Bishop + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 10, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -84,7 +82,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'Q') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Queen, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 4, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -92,7 +90,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'q') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.Queen + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 12, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -100,7 +98,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'K') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.King, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 5, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false
@@ -108,7 +106,7 @@ export function ParseFEN(FEN: string) {
             counter++
             pieceCount++
         } else if (currentChar === 'k') {
-            let pieceInfo = new Uint8Array([pieceCount, PieceType.King + 8, counter])
+            let pieceInfo = new Uint8Array([pieceCount, 13, counter])
             pieces.set(pieceInfo[0], {
                 Piece: pieceInfo,
                 Selected: false

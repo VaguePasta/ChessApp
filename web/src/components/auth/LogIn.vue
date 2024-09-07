@@ -1,6 +1,6 @@
 <script setup>
   import {useRouter} from "vue-router";
-  import {websocket, WebSocketConnect} from "@/connection/websocket.ts";
+  import {websocket, WebSocketConnect} from "@/connection/websocket.js";
   import {ref} from "vue";
   const finding = ref(false)
   const router = useRouter()
@@ -15,21 +15,27 @@
       finding.value = false
     }
     websocket.onmessage = (token) => {
-      websocket.close()
       gameToken.value = token.data
     }
   }
   function AcceptMatch() {
     WebSocketConnect("game/" + gameToken.value)
     websocket.onopen = () => {
+      finding.value = false
       waiting.value = true
-      websocket.onmessage = (ok) => {
-        if (ok.data === "ok") {
-          websocket.onmessage = (config) => {
-            finding.value = false
-            router.push({path: "/game", query: {p: config.data.slice(0, -1), g: config.data[config.data.length - 1]}})
-          }
+    }
+    websocket.onmessage = (ok) => {
+      if (ok.data === "ok") {
+        websocket.onmessage = (config) => {
+          finding.value = false
+          router.push({path: "/game", query: {p: config.data.slice(0, -1), g: config.data[config.data.length - 1]}})
         }
+      }
+      else if (ok.data === "Match cancelled.") {
+        websocket.onclose = () => {}
+        waiting.value = false
+        gameToken.value = null
+        websocket.close()
       }
     }
     gameToken.value = null
@@ -38,7 +44,9 @@
     websocket.close()
   }
   function RefuseMatch() {
+    websocket.send("Refused.")
     gameToken.value = null
+    websocket.close()
   }
   function QuitWaiting() {
     waiting.value = false
