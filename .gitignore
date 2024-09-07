@@ -2,6 +2,7 @@
 web/node_modules/
 web/.idea
 web/.vscode
+web/dist
 .idea
 node_modules
 *.suo
