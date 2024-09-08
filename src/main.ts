@@ -3,7 +3,7 @@ import {StartChessEngine} from "./game/engine/engine";
 export const app = express()
 import cors from 'cors';
 import http = require('http')
-import {CustomWebsocketServer, ProcessUpgrades} from "./connection/websocket";
+import {ProcessUpgrades} from "./connection/websocket";
 app.use([
     express.text({
         type: "text/plain",

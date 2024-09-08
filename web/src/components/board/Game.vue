@@ -8,6 +8,7 @@
   import {useRouter} from "vue-router";
   import CoordinatesY from "@/components/board/CoordinatesY.vue";
   import CoordinatesX from "@/components/board/CoordinatesX.vue";
+  import Highlights from "@/components/board/Highlights.vue";
   const moveSound = new Audio("/sounds/move.mp3")
   const captureSound = new Audio("/sounds/capture.mp3")
   const castlingSound = new Audio("/sounds/castle.mp3")
@@ -26,6 +27,7 @@
   const movableSquare = ref([])
   const result = ref(null)
   const connectionLost = ref(null)
+  const lastMoves = ref([])
   if (props.side === 0) {
     websocket.onmessage = (msg) => {
     legalMoves.value = new Uint16Array(msg.data)
@@ -161,6 +163,7 @@
     return -1
   }
   function ConfirmMove(move) {
+    if (MoveIsLegal(move) === -1) return -1
     let pieceKey = FindPiece(GetSourceSquare(move))
     let targetSquare = GetTargetSquare(move)
     if (props.side === 0) {
@@ -225,6 +228,9 @@
       let move = ConfirmMove(MakeMove(start, index))
       if (move !== -1) {
         SendMove(move, true)
+      }
+      else {
+        pieces.value.get(selectingPiece.value).Selected = false
       }
       selectingPiece.value = 0
       movableSquare.value.length = 0
@@ -317,6 +323,7 @@
     }
     pieces.value.get(pieceKey).Piece[2] = Number(targetSquare)
     sideToMove.value = 1 - sideToMove.value
+    lastMoves.value = [GetSourceSquare(move), targetSquare]
   }
   function QueenPromote() {
     let targetSquare = GetTargetSquare(pendingMove.value)
@@ -331,6 +338,7 @@
     promoting.value = false
     selectingPiece.value = 0
     movableSquare.value.length = 0
+
   }
   function RookPromote() {
     let targetSquare = GetTargetSquare(pendingMove.value)
@@ -383,11 +391,12 @@
 </script>
 
 <template>
-  <CoordinatesY style="left: 24vw; transform: translateY(-50%);" :side="side.value"/>
-  <CoordinatesY style="left: 70vw; transform: translateY(-50%);" :side="side.value"/>
-  <CoordinatesX style="top: 1vh" :side="side.value"/>
-  <CoordinatesX style="top: 95.5vh" :side="side.value"/>
+  <CoordinatesY style="left: 24vw; transform: translateY(-50%);" :side="props.side"/>
+  <CoordinatesY style="left: 70vw; transform: translateY(-50%);" :side="props.side"/>
+  <CoordinatesX style="top: 1vh" :side="props.side"/>
+  <CoordinatesX style="top: 95.5vh" :side="props.side"/>
   <div class="board" @click="PlayerMove">
+    <Highlights v-for="square in lastMoves" :side="props.side" :position="square" :key="square"/>
     <Piece @selecting-piece="SelectingPiece" v-for="piece in pieces" :side="props.side" :sideToMove="sideToMove" :information="piece[1]" :key="piece[0]"/>
     <div v-if="promoting" class="promotion-popup">
       <button v-if="props.side" @click="QueenPromote" class="promotion-button black-queen"/>
@@ -401,7 +410,7 @@
     </div>
 
     <div v-if="selectingPiece" class="move-mask">
-      <LegalSquare v-for="move in movableSquare" :side="side" :move="move" :key="move"/>
+      <LegalSquare v-for="move in movableSquare" :side="props.side" :move="move" :key="move"/>
     </div>
 
     <div v-if="promoting || (result !== null)" class="modal-mask"/>
@@ -428,7 +437,7 @@
   aspect-ratio: 1/1;
   height: 90vh;
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -459,7 +468,7 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 4;
+  z-index: 5;
   width: 30vw;
   height: 18vh;
   border-radius: 10px;

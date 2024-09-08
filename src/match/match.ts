@@ -5,10 +5,13 @@ import {IsKingInCheck} from "../game/moves/attacks";
 import {Player} from "./player";
 import {CountSetBit} from "../game/bitboard/bit_operations";
 import {Pieces, Side} from "../game/bitboard/bit_boards";
+import {CompressMatch} from "./save";
 
 export interface Match {
     Game: Game
+    Moves: bigint
     Token: string
+    MoveCount: number
     Players: Array<Player>
 }
 export const Matches: Map<string, Match> = new Map<string, Match>()
@@ -18,6 +21,8 @@ export function NewMatch(token: string, FEN: string, player1: Player, player2: P
         Matches.set(token, {
             Game: game,
             Token: token,
+            MoveCount: 0,
+            Moves: 0n,
             Players: (player2 === undefined) ? [player1] : [player1, player2]
         })
         return true
@@ -38,6 +43,8 @@ export function StartMatch(match: Match | undefined) {
                 }
                 value.Connection.on('message', (data: any) => {
                     if (game.GameState.SideToMove === value.Side) {
+                        match.Moves += BigInt(parseInt(data)) << BigInt(16 * match.MoveCount)
+                        match.MoveCount++
                         switch(PlayMove(parseInt(data), match.Game)) {
                             case 1:
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
@@ -85,7 +92,9 @@ export function StartMatch(match: Match | undefined) {
                                 moves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
                                 moves[0] = parseInt(data)
                                 match.Players[1 - index].Connection.send(moves)
+                                return
                         }
+                        CompressMatch(match.Moves)
                     }
                 })
                 value.Connection.on('close', () => {

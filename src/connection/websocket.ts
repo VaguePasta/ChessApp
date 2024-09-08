@@ -31,14 +31,6 @@ export function ProcessUpgrades(request: any, socket: any, head: any): boolean {
     }
     return false
 }
-
-GameServer.on('connection', (ws) => {
-    ws.isAlive = true
-    ws.on('pong', () => {
-        // @ts-ignore
-        this.isAlive = true
-    })
-})
 setInterval(() => {
     GameServer.clients.forEach((ws) => {
         if (!ws.isAlive) return ws.terminate()
