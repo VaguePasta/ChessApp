@@ -1,4 +1,4 @@
-import {LeastSignificantOneIndex} from "../bitboard/bit_operations";
+import {CountSetBit} from "../bitboard/bit_operations";
 import {Pieces, Side} from "../bitboard/bit_boards";
 import {PawnAttackTables} from "../pieces/pawn";
 import {GameState} from "../engine/game";
@@ -38,7 +38,7 @@ export function PrintAttackedSquare(game: GameState, side: number) {
 }
 export function IsKingInCheck(game: GameState, checkedBy: number): number {
     let kingBoard = checkedBy ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
-    let kingIndex = Number(LeastSignificantOneIndex(kingBoard))
+    let kingIndex = Number(CountSetBit((kingBoard & -kingBoard) - 1n))
     if (IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, checkedBy)) {
         return kingIndex
     }

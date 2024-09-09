@@ -1,12 +1,12 @@
 import {FENStart, Game, GameState, NewGame} from "../game/engine/game";
-import {ExecuteMove, MoveList} from "../game/moves/move";
+import {MoveList} from "../game/moves/move";
 import {GenerateMoves} from "../game/moves/movegen";
 import {IsKingInCheck} from "../game/moves/attacks";
 import {Player} from "./player";
 import {CountSetBit} from "../game/bitboard/bit_operations";
 import {Pieces, Side} from "../game/bitboard/bit_boards";
 import {CompressMatch} from "./save";
-
+import {ExecuteMove} from "../game/moves/execute_move";
 export interface Match {
     Game: Game
     Moves: bigint

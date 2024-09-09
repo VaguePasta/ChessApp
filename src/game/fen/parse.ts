@@ -1,9 +1,9 @@
 import {GameState} from "../engine/game";
 import {AlgebraicToIndex} from "../bitboard/conversions";
 import {Pieces, Side} from "../bitboard/bit_boards";
-import {SetBit} from "../bitboard/bit_operations";
-import {UpdatePinnedPieces} from "../moves/move";
 import {HashFromState} from "../positions/zobrist_hashing";
+import {UpdatePinnedPieces} from "../moves/updates";
+
 /*
       A FEN string contains six fields:
       0: Pieces positions.
@@ -83,51 +83,51 @@ export function ParseFEN(game: GameState, fenString: string): number {
     for (let index = 0; index < positions.length; index++) {
         switch (positions.charAt(index)) {
             case 'P':
-                game.PieceBitboards[Pieces.P] = SetBit(game.PieceBitboards[Pieces.P], count)
+                game.PieceBitboards[Pieces.P] = game.PieceBitboards[Pieces.P] | (1n << (count))
                 count++
                 break
             case 'N':
-                game.PieceBitboards[Pieces.N] = SetBit(game.PieceBitboards[Pieces.N], count)
+                game.PieceBitboards[Pieces.N] = game.PieceBitboards[Pieces.N] | (1n << (count))
                 count++
                 break
             case 'B':
-                game.PieceBitboards[Pieces.B] = SetBit(game.PieceBitboards[Pieces.B], count)
+                game.PieceBitboards[Pieces.B] = game.PieceBitboards[Pieces.B] | (1n << (count))
                 count++
                 break
             case 'R':
-                game.PieceBitboards[Pieces.R] = SetBit(game.PieceBitboards[Pieces.R], count)
+                game.PieceBitboards[Pieces.R] = game.PieceBitboards[Pieces.R] | (1n << (count))
                 count++
                 break
             case 'Q':
-                game.PieceBitboards[Pieces.Q] = SetBit(game.PieceBitboards[Pieces.Q], count)
+                game.PieceBitboards[Pieces.Q] = game.PieceBitboards[Pieces.Q] | (1n << (count))
                 count++
                 break
             case 'K':
-                game.PieceBitboards[Pieces.K] = SetBit(game.PieceBitboards[Pieces.K], count)
+                game.PieceBitboards[Pieces.K] = game.PieceBitboards[Pieces.K] | (1n << (count))
                 count++
                 break
             case 'p':
-                game.PieceBitboards[Pieces.p] = SetBit(game.PieceBitboards[Pieces.p], count)
+                game.PieceBitboards[Pieces.p] = game.PieceBitboards[Pieces.p] | (1n << (count))
                 count++
                 break
             case 'n':
-                game.PieceBitboards[Pieces.n] = SetBit(game.PieceBitboards[Pieces.n], count)
+                game.PieceBitboards[Pieces.n] = game.PieceBitboards[Pieces.n] | (1n << (count))
                 count++
                 break
             case 'b':
-                game.PieceBitboards[Pieces.b] = SetBit(game.PieceBitboards[Pieces.b], count)
+                game.PieceBitboards[Pieces.b] = game.PieceBitboards[Pieces.b] | (1n << (count))
                 count++
                 break
             case 'r':
-                game.PieceBitboards[Pieces.r] = SetBit(game.PieceBitboards[Pieces.r], count)
+                game.PieceBitboards[Pieces.r] = game.PieceBitboards[Pieces.r] | (1n << (count))
                 count++
                 break
             case 'q':
-                game.PieceBitboards[Pieces.q] = SetBit(game.PieceBitboards[Pieces.q], count)
+                game.PieceBitboards[Pieces.q] = game.PieceBitboards[Pieces.q] | (1n << (count))
                 count++
                 break
             case 'k':
-                game.PieceBitboards[Pieces.k] = SetBit(game.PieceBitboards[Pieces.k], count)
+                game.PieceBitboards[Pieces.k] = game.PieceBitboards[Pieces.k] | (1n << (count))
                 count++
                 break
             case '1':

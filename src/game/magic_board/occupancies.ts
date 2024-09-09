@@ -1,11 +1,12 @@
-import {ClearBit, CountSetBit, LeastSignificantOneIndex, RightShift} from "../bitboard/bit_operations";
+import {CountSetBit} from "../bitboard/bit_operations";
 import {GenerateBishopAttacks, MaskBishopAttacks} from "../pieces/bishop";
 import {GenerateRookAttacks, MaskRookAttacks} from "../pieces/rook";
-import crypto = require('crypto')
+import crypto = require('crypto');
+
 export function GenerateOccupancyBoard(set_index: bigint, mask_bits_count: bigint, attackboard: bigint): bigint {
     let occupancy: bigint = 0n
     for (let count: bigint = 0n; count < mask_bits_count; count++) {
-        let index: bigint = LeastSignificantOneIndex(attackboard)
+        let index: bigint = CountSetBit((attackboard & -attackboard) - 1n)
         attackboard = attackboard & (attackboard - 1n)
         if (set_index & (1n << count)) {
             occupancy |= (1n << index)
@@ -42,7 +43,7 @@ function GenerateMagicNumber(index: bigint, relevantBitCounts: bigint, isBishop:
         usedAttacks = new BigUint64Array(4096)
         let tIndex: number, fail: number
         for (tIndex = 0, fail = 0; !fail && tIndex < occupancyIndices; tIndex++) {
-            let magic_index: bigint = RightShift((occupancies[tIndex] * magicNumber), (64n - relevantBitCounts))
+            let magic_index: bigint = ((occupancies[tIndex] * magicNumber) >> (64n - relevantBitCounts)) & ((1n << (64n - (64n - relevantBitCounts))) - 1n)
             if (usedAttacks[Number(magic_index)] === 0n) {
                 usedAttacks[Number(magic_index)] = attackTables[tIndex]
             }

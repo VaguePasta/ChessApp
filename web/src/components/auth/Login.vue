@@ -1,7 +1,8 @@
 <script setup>
 import {ref} from "vue";
 import {server} from "@/connection/websocket.js";
-
+import {useRouter} from "vue-router";
+const router = useRouter()
 const register = ref(false)
 function SignIn(username, password) {
   fetch(server + 'auth', {
@@ -14,6 +15,10 @@ function SignIn(username, password) {
       'username': username,
       'password': password,
     })
+  }).then((res) => {
+    if (res.ok) {
+      router.push("/dashboard")
+    }
   })
 }
 </script>

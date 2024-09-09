@@ -1,4 +1,4 @@
-import {CountSetBit, RightShift} from "../bitboard/bit_operations";
+import {CountSetBit} from "../bitboard/bit_operations";
 import {GenerateOccupancyBoard} from "../magic_board/occupancies";
 import {RookMagicNumber} from "../magic_board/magic_numbers";
 
@@ -21,7 +21,7 @@ export function GenerateRookAttackTables() {
         let occupancyIndices = (1n << relevantBitcounts)
         for (let index = 0n; index < occupancyIndices; index++) {
             let occupancy = GenerateOccupancyBoard(index, relevantBitcounts, RookAttackMask[Number(i)])
-            let magic_index = RightShift((occupancy * RookMagicNumber[Number(i)]), BigInt(64 - RookRelevancyBitCounts[Number(i)]))
+            let magic_index = ((occupancy * RookMagicNumber[Number(i)]) >> BigInt(64 - RookRelevancyBitCounts[Number(i)])) & ((1n << (64n - BigInt(64 - RookRelevancyBitCounts[Number(i)]))) - 1n)
             RookAttackTables[Number(i)][Number(magic_index)] = GenerateRookAttacks(i, occupancy)
         }
     }
@@ -65,6 +65,6 @@ export function GenerateRookAttacks(index: bigint, blockTable: bigint): bigint {
 export function GetRookAttacks(index: bigint, occupancy: bigint): bigint {
     occupancy &= RookAttackMask[Number(index)]
     occupancy *= RookMagicNumber[Number(index)]
-    occupancy = RightShift(occupancy, BigInt(64 - RookRelevancyBitCounts[Number(index)]))
+    occupancy = (occupancy >> BigInt(64 - RookRelevancyBitCounts[Number(index)])) & ((1n << (64n - BigInt(64 - RookRelevancyBitCounts[Number(index)]))) - 1n)
     return RookAttackTables[Number(index)][Number(occupancy)]
 }

@@ -1,5 +1,4 @@
 import {NotABFile, NotAFile, NotGHFile, NotHFile} from "./consts";
-import {RightShift} from "../bitboard/bit_operations";
 
 export const KnightAttackTables: BigUint64Array = new BigUint64Array(64)
 export function GenerateKnightAttackTables() {
@@ -10,10 +9,10 @@ export function GenerateKnightAttackTables() {
 function MaskKnightAttacks(index: bigint): bigint {
     let attackBoard: bigint = 0n
     let pieceBoard: bigint = 1n << index
-    attackBoard |= (RightShift(pieceBoard, 17n) & NotHFile);
-    attackBoard |= (RightShift(pieceBoard, 15n) & NotAFile);
-    attackBoard |= (RightShift(pieceBoard, 10n) & NotGHFile);
-    attackBoard |= (RightShift(pieceBoard, 6n) & NotABFile);
+    attackBoard |= ((pieceBoard >> 17n) & ((1n << (64n - 17n)) - 1n) & NotHFile);
+    attackBoard |= ((pieceBoard >> 15n) & ((1n << (64n - 15n)) - 1n) & NotAFile);
+    attackBoard |= ((pieceBoard >> 10n) & ((1n << (64n - 10n)) - 1n) & NotGHFile);
+    attackBoard |= ((pieceBoard >> 6n) & ((1n << (64n - 6n)) - 1n) & NotABFile);
     attackBoard |= ((pieceBoard << 17n) & NotAFile);
     attackBoard |= ((pieceBoard << 15n) & NotHFile);
     attackBoard |= ((pieceBoard << 10n) & NotABFile);

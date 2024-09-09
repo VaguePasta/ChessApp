@@ -1,60 +1,61 @@
-import {ClearBit, LeastSignificantOneIndex, RightShift} from "../bitboard/bit_operations";
+import {CountSetBit} from "../bitboard/bit_operations";
 import {Side} from "../bitboard/bit_boards";
-import {AddMove, MakeMove, MoveFlags, MoveList} from "./move";
+import {MakeMove, MoveFlags, MoveList} from "./move";
 
 export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: number, moveList: MoveList) {
     if (side === Side.white) {
         let whiteSingle = WhiteSinglePush(pawnBoard, empty)
         let whiteDouble = WhiteDoublePush(pawnBoard, empty)
         while (whiteSingle) {
-            let leastSingle = LeastSignificantOneIndex(whiteSingle)
+            let leastSingle = CountSetBit((whiteSingle & -whiteSingle) - 1n)
             if (leastSingle <= 7n) {
-                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.knight_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.bishop_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.rook_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.queen_promotion))
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.knight_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.bishop_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.rook_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.queen_promotion)
             }
             else {
-                AddMove(moveList, MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.quiet_moves))
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle + 8n), Number(leastSingle), MoveFlags.quiet_moves)
             }
-            whiteSingle = ClearBit(whiteSingle, leastSingle)
+            whiteSingle = whiteSingle & (whiteSingle - 1n)
         }
         while (whiteDouble) {
-            let leastDouble = LeastSignificantOneIndex(whiteDouble)
-            AddMove(moveList, MakeMove(Number(leastDouble + 16n), Number(leastDouble), MoveFlags.double_push))
-            whiteDouble = ClearBit(whiteDouble, leastDouble)
+            let leastDouble = CountSetBit((whiteDouble & -whiteDouble) - 1n)
+
+            moveList.moves[moveList.count++] = MakeMove(Number(leastDouble + 16n), Number(leastDouble), MoveFlags.double_push)
+            whiteDouble = whiteDouble & (whiteDouble - 1n)
         }
     }
     else {
         let blackSingle = BlackSinglePush(pawnBoard, empty)
         let blackDouble = BlackDoublePush(pawnBoard, empty)
         while (blackSingle) {
-            let leastSingle = LeastSignificantOneIndex(blackSingle)
+            let leastSingle = CountSetBit((blackSingle & -blackSingle) - 1n)
             if (leastSingle >= 56n) {
-                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.knight_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.bishop_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.rook_promotion))
-                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.queen_promotion))
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.bishop_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.knight_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.rook_promotion)
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.queen_promotion)
             }
             else {
-                AddMove(moveList, MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.quiet_moves))
+                moveList.moves[moveList.count++] = MakeMove(Number(leastSingle - 8n), Number(leastSingle), MoveFlags.quiet_moves)
             }
-            blackSingle = ClearBit(blackSingle, leastSingle)
+            blackSingle = blackSingle & (blackSingle - 1n)
         }
         while (blackDouble) {
-            let leastDouble = LeastSignificantOneIndex(blackDouble)
-            AddMove(moveList, MakeMove(Number(leastDouble - 16n), Number(leastDouble), MoveFlags.double_push))
-            blackDouble = ClearBit(blackDouble, leastDouble)
+            let leastDouble = CountSetBit((blackDouble & -blackDouble) - 1n)
+            moveList.moves[moveList.count++] = MakeMove(Number(leastDouble - 16n), Number(leastDouble), MoveFlags.double_push)
+            blackDouble = blackDouble & (blackDouble - 1n)
         }
     }
 }
 function WhiteSinglePush(whitePawnBoard: bigint, empty: bigint): bigint {
-    return RightShift(whitePawnBoard, 8n) & empty
+    return (whitePawnBoard >> 8n) & ((1n << (64n - 8n)) - 1n) & empty
 }
 function WhiteDoublePush(whitePawnBoard: bigint, empty: bigint) {
     const rank4: bigint = 0x000000FF00000000n
-    let SinglePushes = RightShift(whitePawnBoard, 8n) & empty
-    return RightShift(SinglePushes, 8n) & empty & rank4
+    let SinglePushes = (whitePawnBoard >> 8n) & ((1n << (64n - 8n)) - 1n) & empty
+    return (SinglePushes >> 8n) & ((1n << (64n - 8n)) - 1n) & empty & rank4
 }
 function BlackSinglePush(blackPawnBoard: bigint, empty: bigint): bigint {
     return (blackPawnBoard << 8n) & empty

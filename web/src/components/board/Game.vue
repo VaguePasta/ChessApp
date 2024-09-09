@@ -385,7 +385,7 @@
   const router = useRouter()
   function returnToMenu() {
     pieces.value.clear()
-    router.push({path : "/"})
+    router.push({path : "/dashboard"})
   }
   websocket.send("ok")
 </script>

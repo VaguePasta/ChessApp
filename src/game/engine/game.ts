@@ -1,7 +1,7 @@
 import {PieceSymbols} from "../bitboard/bit_boards";
-import {GetBit} from "../bitboard/bit_operations";
 import {MoveList} from "../moves/move";
 import {ParseFEN} from "../fen/parse";
+
 export const FENStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 export interface Game {
     GameState: GameState
@@ -52,7 +52,7 @@ export function PrintGameState(game: GameState) {
             }
             let piece: boolean = false
             for (let i = 0; i < 12; i++) {
-                if (GetBit(bitboards[i], BigInt(index))) {
+                if ((bitboards[i] >> BigInt(index)) & 1n) {
                     board += PieceSymbols[i] + " "
                     piece = true
                     break

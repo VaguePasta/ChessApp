@@ -1,6 +1,7 @@
 import {GenerateMoves} from "../moves/movegen";
 import {GameState} from "./game";
-import {ExecuteMove, GenMoveString} from "../moves/move";
+import {GenMoveString} from "../moves/move";
+import {ExecuteMove} from "../moves/execute_move";
 
 export function Perft(game: GameState, depth: number): number {
     let i: number;

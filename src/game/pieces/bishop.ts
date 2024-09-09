@@ -1,4 +1,4 @@
-import {CountSetBit, RightShift} from "../bitboard/bit_operations";
+import {CountSetBit} from "../bitboard/bit_operations";
 import {GenerateOccupancyBoard} from "../magic_board/occupancies";
 import {BishopMagicNumbers} from "../magic_board/magic_numbers";
 
@@ -21,7 +21,7 @@ export function GenerateBishopAttackTables() {
         let occupancyIndices = (1n << relevantBitcounts)
         for (let index = 0n; index < occupancyIndices; index++) {
             let occupancy = GenerateOccupancyBoard(index, relevantBitcounts, BishopAttackMask[Number(i)])
-            let magic_index = RightShift((occupancy * BishopMagicNumbers[Number(i)]), BigInt(64 - BishopRelevancyBitCounts[Number(i)]))
+            let magic_index = ((occupancy * BishopMagicNumbers[Number(i)]) >> BigInt(64 - BishopRelevancyBitCounts[Number(i)])) & ((1n << (64n - BigInt(64 - BishopRelevancyBitCounts[Number(i)]))) - 1n)
             BishopAttackTables[Number(i)][Number(magic_index)] = GenerateBishopAttacks(i, occupancy)
         }
     }
@@ -65,6 +65,6 @@ export function GenerateBishopAttacks(index: bigint, blockTable: bigint) {
 export function GetBishopAttacks(index: bigint, occupancy: bigint): bigint {
     occupancy &= BishopAttackMask[Number(index)]
     occupancy *= BishopMagicNumbers[Number(index)]
-    occupancy = RightShift(occupancy, BigInt(64 - BishopRelevancyBitCounts[Number(index)]))
+    occupancy = (occupancy >> BigInt(64 - BishopRelevancyBitCounts[Number(index)])) & ((1n << (64n - BigInt(64 - BishopRelevancyBitCounts[Number(index)]))) - 1n)
     return BishopAttackTables[Number(index)][Number(occupancy)]
 }

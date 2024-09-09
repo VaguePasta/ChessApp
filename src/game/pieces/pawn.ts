@@ -1,4 +1,3 @@
-import {RightShift} from "../bitboard/bit_operations";
 import {NotAFile, NotHFile} from "./consts";
 
 export const PawnAttackTables: Array<BigUint64Array> = Array.from(Array(2), () => new BigUint64Array(64))
@@ -12,8 +11,8 @@ function MaskPawnAttack(side: number, index: bigint): bigint {
     let attackBoard: bigint = 0n
     let pieceBoard: bigint = 1n << index
     if (!side) {
-        attackBoard |= (RightShift(pieceBoard, 7n) & NotAFile)
-        attackBoard |= (RightShift(pieceBoard, 9n) & NotHFile)
+        attackBoard |= ((pieceBoard >> 7n) & ((1n << (64n - 7n)) - 1n) & NotAFile)
+        attackBoard |= ((pieceBoard >> 9n) & ((1n << (64n - 9n)) - 1n) & NotHFile)
     }
     else {
         attackBoard |= ((pieceBoard << 7n) & NotHFile)

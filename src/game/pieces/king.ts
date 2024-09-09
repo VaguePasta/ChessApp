@@ -1,4 +1,3 @@
-import {RightShift} from "../bitboard/bit_operations";
 import {NotAFile, NotHFile} from "./consts";
 
 export const KingAttackTables: BigUint64Array = new BigUint64Array(64)
@@ -10,10 +9,10 @@ export function GenerateKingAttackTables() {
 function MaskKingAttacks(index: bigint): bigint {
     let attackBoard: bigint = 0n
     let pieceBoard: bigint = 1n << index
-    attackBoard |= RightShift(pieceBoard, 7n) & NotAFile
-    attackBoard |= RightShift(pieceBoard, 8n)
-    attackBoard |= RightShift(pieceBoard, 9n) & NotHFile
-    attackBoard |= RightShift(pieceBoard, 1n) & NotHFile
+    attackBoard |= (pieceBoard >> 7n) & ((1n << (64n - 7n)) - 1n) & NotAFile
+    attackBoard |= (pieceBoard >> 8n) & ((1n << (64n - 8n)) - 1n)
+    attackBoard |= (pieceBoard >> 9n) & ((1n << (64n - 9n)) - 1n) & NotHFile
+    attackBoard |= (pieceBoard >> 1n) & ((1n << (64n - 1n)) - 1n) & NotHFile
     attackBoard |= (pieceBoard << 7n) & NotHFile
     attackBoard |= pieceBoard << 8n
     attackBoard |= (pieceBoard << 9n) & NotAFile
