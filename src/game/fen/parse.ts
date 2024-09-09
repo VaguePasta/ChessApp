@@ -166,7 +166,8 @@ export function ParseFEN(game: GameState, fenString: string): number {
     game.OccupancyBoards[Side.white] = (game.PieceBitboards[Pieces.P] | game.PieceBitboards[Pieces.N] | game.PieceBitboards[Pieces.B] | game.PieceBitboards[Pieces.R] | game.PieceBitboards[Pieces.Q] | game.PieceBitboards[Pieces.K])
     game.OccupancyBoards[Side.black] = (game.PieceBitboards[Pieces.p] | game.PieceBitboards[Pieces.n] | game.PieceBitboards[Pieces.b] | game.PieceBitboards[Pieces.r] | game.PieceBitboards[Pieces.q] | game.PieceBitboards[Pieces.k])
     game.OccupancyBoards[Side.both] = (game.OccupancyBoards[Side.white] | game.OccupancyBoards[Side.black])
-    game.PinnedBoards[1 - game.SideToMove] = UpdatePinnedPieces(game)
+    game.PinnedBoards[1 - game.SideToMove] = UpdatePinnedPieces(game, 1 - game.SideToMove)
+    game.PinnedBoards[game.SideToMove] = UpdatePinnedPieces(game, game.SideToMove)
     game.PastPositions.unshift(HashFromState(game))
     return 0
 }

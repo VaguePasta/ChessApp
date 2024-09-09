@@ -36,8 +36,11 @@ export function PrintAttackedSquare(game: GameState, side: number) {
     }
     console.log(board)
 }
-export function IsKingInCheck(game: GameState, checkedBy: number): boolean {
+export function IsKingInCheck(game: GameState, checkedBy: number): number {
     let kingBoard = checkedBy ? game.PieceBitboards[Pieces.K] : game.PieceBitboards[Pieces.k]
     let kingIndex = Number(LeastSignificantOneIndex(kingBoard))
-    return IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, checkedBy);
+    if (IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, kingIndex, checkedBy)) {
+        return kingIndex
+    }
+    return -1
 }

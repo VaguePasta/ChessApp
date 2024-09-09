@@ -6,7 +6,7 @@ export function GenerateOccupancyBoard(set_index: bigint, mask_bits_count: bigin
     let occupancy: bigint = 0n
     for (let count: bigint = 0n; count < mask_bits_count; count++) {
         let index: bigint = LeastSignificantOneIndex(attackboard)
-        attackboard = ClearBit(attackboard, index)
+        attackboard = attackboard & (attackboard - 1n)
         if (set_index & (1n << count)) {
             occupancy |= (1n << index)
         }
@@ -14,7 +14,6 @@ export function GenerateOccupancyBoard(set_index: bigint, mask_bits_count: bigin
     return occupancy
 }
 function GenerateRandomNumber(): bigint {
-    crypto.randomBytes(8).readBigUInt64BE(0)
     return crypto.randomBytes(8).readBigUInt64BE(0)
 }
 function RandomBigInt(): bigint {

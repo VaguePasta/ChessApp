@@ -116,7 +116,7 @@ export function StartMatch(match: Match | undefined) {
  */
 function CheckEndGame(gameState: GameState, legalMoveList: MoveList) {
     if (legalMoveList.count === 0) {
-        if (IsKingInCheck(gameState, 1 - gameState.SideToMove)) {
+        if (IsKingInCheck(gameState, 1 - gameState.SideToMove) !== -1) {
             return 1
         } else {
             return 2

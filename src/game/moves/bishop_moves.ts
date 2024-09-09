@@ -15,7 +15,7 @@ export function GenerateBishopMoves(bishopBoard: bigint, occupancy: BigUint64Arr
             else {
                 AddMove(moveList, MakeMove(Number(source), Number(target), MoveFlags.capture))
             }
-            attackBoard = ClearBit(attackBoard, target)
+            attackBoard = attackBoard & (attackBoard - 1n)
         }
         bishopBoard = ClearBit(bishopBoard, source)
     }
