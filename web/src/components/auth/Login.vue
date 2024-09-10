@@ -24,13 +24,13 @@ function SignIn(username, password) {
 </script>
 
 <template>
-  <div style="height: 100%; background-color: #525561; display: flex; align-items: center; justify-content: center">
+  <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center">
     <div class="login-board display: flex; align-items: center; justify-content: center">
       <div v-if="!register" class="prompt">
         Sign in to your account.
         <input v-model="user_name" style="margin-top: 15%" placeholder="Username" class="input"/>
         <input v-model="password" type="password" placeholder="Password" class="input"/>
-        <div style="font-size: 15px">Don't have an account? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Register</span>
+        <div style="font-size: 0.6em">Don't have an account? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Register</span>
         </div>
         <button @click="SignIn(user_name, password)" class="confirm-button">Sign in</button>
       </div>
@@ -39,7 +39,7 @@ function SignIn(username, password) {
         <input style="margin-top: 15%" placeholder="Username" class="input"/>
         <input type="password" placeholder="Enter password" class="input"/>
         <input type="password" placeholder="Re-enter password" class="input"/>
-        <div style="font-size: 15px">Already a member? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Sign in</span>
+        <div style="font-size: 0.6em">Already a member? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Sign in</span>
         </div>
         <button class="confirm-button">Register</button>
       </div>
@@ -64,14 +64,14 @@ function SignIn(username, password) {
   border: none;
   color: white;
   font-family: gilroy-bold, sans-serif;
-  font-size: 15px;
+  font-size: 0.65em;
   margin-top: 10%;
 }
 .confirm-button:hover {
   background-color: #1d90f5;
 }
 .login-board {
-  width: 60vw;
+  width: 60%;
   aspect-ratio: 16/9;
   background-image: linear-gradient(to left, transparent, #272a37 75%), url("@/assets/images/log_background.jpg");
   background-size: 100%;
@@ -85,7 +85,7 @@ function SignIn(username, password) {
   aspect-ratio: 1/1.6;
   color: white;
   font-family: gilroy-bold, sans-serif;
-  font-size: 26px;
+  font-size: 3.5vh;
   display: flex;
   align-items: center;
   flex-direction: column;
@@ -100,7 +100,7 @@ function SignIn(username, password) {
   box-sizing: border-box;
   border-radius: 17px;
   border-style: none;
-  font-size: 18px;
+  font-size: 0.7em;
   font-family: gilroy-medium, sans-serif;
   margin-bottom: 10%;
   padding: 5%;

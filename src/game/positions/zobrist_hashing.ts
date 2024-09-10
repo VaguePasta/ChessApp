@@ -28,7 +28,7 @@ export function HashFromState(game: GameState): bigint {
     let occupancy = game.OccupancyBoards[Side.both]
     while(occupancy) {
         let index = CountSetBit((occupancy & -occupancy) - 1n)
-        let piece = GivenSquarePiece(index, game.PieceBitboards, -1)
+        let piece = GivenSquarePiece(index, game.PieceBitboards)
         hash = hash ^ PiecePositionKey[piece][Number(index)]
         occupancy = occupancy & (occupancy - 1n)
     }

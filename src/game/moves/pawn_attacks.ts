@@ -13,19 +13,19 @@ export function GeneratePawnCaptures(pawnBoard: bigint, enemyOccupancy: bigint, 
         let attacks = PawnAttackTables[side][Number(source)] & (enemyOccupancy | EnPassant(enPassantSquare))
         while(attacks) {
             target = CountSetBit((attacks & -attacks) - 1n)
-            if (target <= 7n || target >= 56n) {
-                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.rook_promo_capture)
-                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.knight_promo_capture)
-                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.bishop_promo_capture)
-                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.queen_promo_capture)
-            }
-            else {
-                if (target === BigInt(enPassantSquare)) {
+            if (target >= 7n && target <= 56n) {
+                if (enPassantSquare !== -1 && target === BigInt(enPassantSquare)) {
                     moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.ep_capture)
                 }
                 else {
                     moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.capture)
                 }
+            }
+            else {
+                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.rook_promo_capture)
+                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.knight_promo_capture)
+                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.bishop_promo_capture)
+                moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.queen_promo_capture)
             }
             attacks = attacks & (attacks - 1n)
         }

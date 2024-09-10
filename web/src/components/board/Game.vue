@@ -391,11 +391,9 @@
 </script>
 
 <template>
-  <CoordinatesY style="left: 24vw; transform: translateY(-50%);" :side="props.side"/>
-  <CoordinatesY style="left: 70vw; transform: translateY(-50%);" :side="props.side"/>
-  <CoordinatesX style="top: 1vh" :side="props.side"/>
-  <CoordinatesX style="top: 95.5vh" :side="props.side"/>
   <div class="board" @click="PlayerMove">
+    <CoordinatesY style="left: 0.25vh;" :side="props.side"/>
+    <CoordinatesX style="bottom: 0.25vh; left: 10.5%" :side="props.side"/>
     <Highlights v-for="square in lastMoves" :side="props.side" :position="square" :key="square"/>
     <Piece @selecting-piece="SelectingPiece" v-for="piece in pieces" :side="props.side" :sideToMove="sideToMove" :information="piece[1]" :key="piece[0]"/>
     <div v-if="promoting" class="promotion-popup">
@@ -431,6 +429,7 @@
 <style scoped>
 .board {
   background-image: url("@/assets/board/board.svg");
+  margin: 0;
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;

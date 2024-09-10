@@ -26,7 +26,7 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
         let checkingBoard = CheckingPieces(game.PieceBitboards, game.OccupancyBoards, kingIndex, game.SideToMove)
         for (let i = 0; i < pseudoLegalMoves.count; i++) {
             move = pseudoLegalMoves.moves[i]
-            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
+            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards)
             if (movePiece === kingBoard) {
                 let gameCopy = ExecuteMove(game, move)
                 if (IsKingInCheck(gameCopy, gameCopy.SideToMove) === -1) {
@@ -44,7 +44,7 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
                     case Pieces.P:
                         for (let i = 0; i < pseudoLegalMoves.count; i++) {
                             move = pseudoLegalMoves.moves[i]
-                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
+                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards)
                             if (movePiece === kingBoard) continue
                             if (game.PinnedBoards[game.SideToMove] & (1n << BigInt(GetMoveSource(move)))) continue
                             let move_target = GetMoveTarget(move)
@@ -61,7 +61,7 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
                     case Pieces.N:
                         for (let i = 0; i < pseudoLegalMoves.count; i++) {
                             move = pseudoLegalMoves.moves[i]
-                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
+                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards)
                             if (movePiece === kingBoard) continue
                             if (game.PinnedBoards[game.SideToMove] & (1n << BigInt(GetMoveSource(move)))) continue
                             if (GetMoveTarget(move) === Number(checker_position)) {
@@ -72,7 +72,7 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
                     default:
                         for (let i = 0; i < pseudoLegalMoves.count; i++) {
                             move = pseudoLegalMoves.moves[i]
-                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
+                            movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards)
                             if (movePiece === kingBoard) continue
                             if (game.PinnedBoards[game.SideToMove] & (1n << BigInt(GetMoveSource(move)))) continue
                             let move_target = GetMoveTarget(move)
@@ -93,7 +93,7 @@ export function TryMoves(game: GameState, pseudoLegalMoves: MoveList): MoveList 
             }
             continue
         }
-        movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards, game.SideToMove)
+        movePiece = GivenSquarePiece(BigInt(GetMoveSource(move)), game.PieceBitboards)
         if (movePiece === kingBoard) {
             if (!IsSquareAttacked(game.PieceBitboards, game.OccupancyBoards, GetMoveTarget(move), 1 - game.SideToMove)) {
                 LegalMoves.moves[LegalMoves.count++] = move

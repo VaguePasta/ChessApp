@@ -1,5 +1,7 @@
 import {WebSocketServer, WebSocket } from 'ws'
 import {ConnectToLobby, ProcessMatchmakingRequest} from "../match/matchmaking";
+import * as http from "node:http";
+import internal from "node:stream";
 export class CustomWebSocket extends WebSocket {
     isAlive: boolean | undefined
 }
@@ -13,7 +15,8 @@ export class CustomWebsocketServer extends WebSocketServer<typeof CustomWebSocke
 }
 export const GameServer = new CustomWebsocketServer()
 export const MatchMakingServer = new CustomWebsocketServer()
-export function ProcessUpgrades(request: any, socket: any, head: any): boolean {
+export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.Duplex, head: Buffer): boolean {
+    // @ts-ignore
     let requestData = request.url.slice(1).split("/")
     if (requestData[0] === "match") {
         MatchMakingServer.handleUpgrade(request, socket, head, (ws) => {

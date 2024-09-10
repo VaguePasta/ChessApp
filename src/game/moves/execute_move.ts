@@ -12,7 +12,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
     game.EnPassantSquare = -1
     let ZobristHash = game.PastPositions[0]
     if (game.SideToMove === Side.black) game.FullMoves++
-    let movePiece = GivenSquarePiece(source, game.PieceBitboards, game.SideToMove)
+    let movePiece = GivenSquarePiece(source, game.PieceBitboards)
     if (movePiece === Pieces.K) {
         game.CastlingRight = (game.CastlingRight & 0b1100)
         ZobristHash = ZobristHash ^ MiscellaneousKey[0] ^ MiscellaneousKey[1]
@@ -40,7 +40,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
         flag === MoveFlags.knight_promo_capture || flag === MoveFlags.bishop_promo_capture ||
         flag === MoveFlags.rook_promo_capture
     ) {
-        let targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+        let targetPiece = GivenSquarePiece(target, game.PieceBitboards)
         if (targetPiece === Pieces.R && target === 63n && (game.CastlingRight & CastlingRights.WhiteKing)) {
             game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteKing
             ZobristHash = ZobristHash ^ MiscellaneousKey[0]
@@ -70,7 +70,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards)
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] & ~(1n << source)
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] | (1n << (target))
             game.PieceBitboards[targetPiece] = game.PieceBitboards[targetPiece] & ~(1n << target)
@@ -210,7 +210,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.knight_promo_capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards)
             let kType = game.SideToMove ? Pieces.n : Pieces.N
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] & ~(1n << source)
             game.OccupancyBoards[game.SideToMove] = game.OccupancyBoards[game.SideToMove] & ~(1n << source)
@@ -224,7 +224,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.rook_promo_capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards)
             let rType = game.SideToMove ? Pieces.r : Pieces.R
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] & ~(1n << source)
             game.OccupancyBoards[game.SideToMove] = game.OccupancyBoards[game.SideToMove] & ~(1n << source)
@@ -238,7 +238,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.bishop_promo_capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards)
             let bType = game.SideToMove ? Pieces.b : Pieces.B
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] & ~(1n << source)
             game.OccupancyBoards[game.SideToMove] = game.OccupancyBoards[game.SideToMove] & ~(1n << source)
@@ -252,7 +252,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.queen_promo_capture:
-            targetPiece = GivenSquarePiece(target, game.PieceBitboards, 1 - game.SideToMove)
+            targetPiece = GivenSquarePiece(target, game.PieceBitboards)
             let qType = game.SideToMove ? Pieces.q : Pieces.Q
             game.PieceBitboards[movePiece] = game.PieceBitboards[movePiece] & ~(1n << source)
             game.OccupancyBoards[game.SideToMove] = game.OccupancyBoards[game.SideToMove] & ~(1n << source)

@@ -53,22 +53,10 @@ export function GetMoveTarget(move: number): number {
 export function GetMoveFlag(move: number) {
     return (move & MoveFlagsMask) >>> 12
 }
-export function GivenSquarePiece(index: bigint, bitboards: BigUint64Array, side: number): number {
+export function GivenSquarePiece(index: bigint, bitboards: BigUint64Array): number {
     let bit_check = 1n << index
-    if (!side) {
-        for (let i = 0; i < 7; i++) {
-            if (bitboards[i] & bit_check) return i
-        }
-    }
-    else if (side === 1) {
-        for (let i = 6; i < 12; i++) {
-            if (bitboards[i] & bit_check) return i
-        }
-    }
-    else if (side === -1) {
-        for (let i = 0; i < 12; i++) {
-            if (bitboards[i] & bit_check) return i
-        }
+    for (let i = 0; i < 12; i++) {
+        if (bitboards[i] & bit_check) return i
     }
     return -1
 }
@@ -116,7 +104,7 @@ export function PrintMove(move: number, side: number, pieceBoards: BigUint64Arra
     }
     else {
         let promotion = MovePromotion(move, side)
-        moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards, side))
+        moveString += PieceName.charAt(GivenSquarePiece(BigInt(move), pieceBoards))
         moveString += IndexToAlgebraic(BigInt(GetMoveSource(move)))
         if (MoveCapture(move)) moveString += "x"
         moveString += IndexToAlgebraic(BigInt(GetMoveTarget(move)))

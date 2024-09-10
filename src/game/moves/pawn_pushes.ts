@@ -2,10 +2,12 @@ import {CountSetBit} from "../bitboard/bit_operations";
 import {Side} from "../bitboard/bit_boards";
 import {MakeMove, MoveFlags, MoveList} from "./move";
 
+const rank5: bigint = 0x00000000FF000000n
+const rank4: bigint = 0x000000FF00000000n
 export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: number, moveList: MoveList) {
     if (side === Side.white) {
-        let whiteSingle = WhiteSinglePush(pawnBoard, empty)
-        let whiteDouble = WhiteDoublePush(pawnBoard, empty)
+        let whiteSingle = (pawnBoard >> 8n) & ((1n << 56n) - 1n) & empty
+        let whiteDouble = (whiteSingle >> 8n) & ((1n << 56n) - 1n) & empty & rank4
         while (whiteSingle) {
             let leastSingle = CountSetBit((whiteSingle & -whiteSingle) - 1n)
             if (leastSingle <= 7n) {
@@ -27,8 +29,8 @@ export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: numbe
         }
     }
     else {
-        let blackSingle = BlackSinglePush(pawnBoard, empty)
-        let blackDouble = BlackDoublePush(pawnBoard, empty)
+        let blackSingle = (pawnBoard << 8n) & empty
+        let blackDouble = (blackSingle << 8n) & empty & rank5
         while (blackSingle) {
             let leastSingle = CountSetBit((blackSingle & -blackSingle) - 1n)
             if (leastSingle >= 56n) {
@@ -48,20 +50,4 @@ export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: numbe
             blackDouble = blackDouble & (blackDouble - 1n)
         }
     }
-}
-function WhiteSinglePush(whitePawnBoard: bigint, empty: bigint): bigint {
-    return (whitePawnBoard >> 8n) & ((1n << (64n - 8n)) - 1n) & empty
-}
-function WhiteDoublePush(whitePawnBoard: bigint, empty: bigint) {
-    const rank4: bigint = 0x000000FF00000000n
-    let SinglePushes = (whitePawnBoard >> 8n) & ((1n << (64n - 8n)) - 1n) & empty
-    return (SinglePushes >> 8n) & ((1n << (64n - 8n)) - 1n) & empty & rank4
-}
-function BlackSinglePush(blackPawnBoard: bigint, empty: bigint): bigint {
-    return (blackPawnBoard << 8n) & empty
-}
-function BlackDoublePush(blackPawnBoard: bigint, empty: bigint) {
-    const rank5: bigint = 0x00000000FF000000n
-    let SinglePushes = (blackPawnBoard << 8n) & empty
-    return (SinglePushes << 8n) & empty & rank5
 }

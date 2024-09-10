@@ -25,7 +25,6 @@ server.listen(8080,() => {
     console.log("Starting chess engine....")
     StartChessEngine()
     console.log('Server started. Listening on 8080.')
-
 })
 server.on('upgrade', function upgrade(request, socket, head) {
     if (!ProcessUpgrades(request, socket, head))
