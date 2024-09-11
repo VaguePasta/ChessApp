@@ -7,6 +7,7 @@ import {GenerateLines} from "../bitboard/consts";
 import {GenerateZobristRandoms} from "../positions/init";
 
 export function StartChessEngine() {
+    console.log("Starting chess engine....")
     GeneratePawnAttackTables()
     GenerateKingAttackTables()
     GenerateKnightAttackTables()

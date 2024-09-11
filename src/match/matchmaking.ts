@@ -1,6 +1,7 @@
 import {Matches, NewMatch, StartMatch} from "./match";
 import {GenerateRandomToken} from "../auth/token";
 import {FENStart} from "../game/engine/game";
+import {Account, Active_sessions} from "../auth/account";
 
 export const MatchQueue = new Array<MatchMaker>()
 export interface MatchMaker {
@@ -8,13 +9,13 @@ export interface MatchMaker {
 }
 export interface WaitingRoom {
     Token: string
-    Player1: any
-    Player2: any
+    Player1: Account | null
+    Player2: Account | null
 }
 export const Lobby = new Map<string, WaitingRoom>()
 export function ProcessMatchmakingRequest(ws: any) {
     if (MatchQueue.length >= 1) {
-        let token = GenerateRandomToken()
+        let token = GenerateRandomToken(8)
         Lobby.set(token, {
             Token: token,
             Player1: null,
@@ -26,11 +27,11 @@ export function ProcessMatchmakingRequest(ws: any) {
                 let lobby = Lobby.get(token)
                 if (lobby) {
                     if (lobby.Player1) {
-                        lobby.Player1.send("Match cancelled.")
+                        lobby.Player1.Websocket.send("Match cancelled.")
                         ws.close()
                     }
                     else if (lobby.Player2) {
-                        lobby.Player1.send("Match cancelled.")
+                        lobby.Player2.Websocket.send("Match cancelled.")
                         ws.close()
                     }
                     Lobby.delete(token)
@@ -44,11 +45,11 @@ export function ProcessMatchmakingRequest(ws: any) {
                 let lobby = Lobby.get(token)
                 if (lobby) {
                     if (lobby.Player1) {
-                        lobby.Player1.send("Match cancelled.")
+                        lobby.Player1.Websocket.send("Match cancelled.")
                         ws.close()
                     }
                     else if (lobby.Player2) {
-                        lobby.Player1.send("Match cancelled.")
+                        lobby.Player2.Websocket.send("Match cancelled.")
                         ws.close()
                     }
                     Lobby.delete(token)
@@ -72,7 +73,7 @@ export function ProcessMatchmakingRequest(ws: any) {
         })
     }
 }
-export function ConnectToLobby(ws: any, token: any): void {
+export function ConnectToLobby(ws: any, token: any, sessionId: string): void {
     let lobby = Lobby.get(token)
     if (lobby === undefined) {
         ws.send("Match cancelled.")
@@ -81,12 +82,12 @@ export function ConnectToLobby(ws: any, token: any): void {
     }
     ws.on('exit',(lobby: WaitingRoom) => {
         if (lobby.Player1) {
-            lobby.Player1.send("Match cancelled.")
-            lobby.Player1.close()
+            lobby.Player1.Websocket.send("Match cancelled.")
+            lobby.Player1.Websocket.close()
         }
         if (lobby.Player2) {
-            lobby.Player2.send("Match cancelled.")
-            lobby.Player2.close()
+            lobby.Player2.Websocket.send("Match cancelled.")
+            lobby.Player2.Websocket.close()
         }
         Lobby.delete(lobby.Token)
     })
@@ -98,22 +99,32 @@ export function ConnectToLobby(ws: any, token: any): void {
         return
     }
     if (lobby.Player1 === null) {
-        lobby.Player1 = ws
+        // @ts-ignore
+        lobby.Player1 = Active_sessions.get(sessionId)
+        // @ts-ignore
+        lobby.Player1.Websocket = ws
         return
     }
     else {
-        lobby.Player2 = ws
+        // @ts-ignore
+        lobby.Player2 = Active_sessions.get(sessionId)
+        // @ts-ignore
+        lobby.Player2.Websocket = ws
         let player1Side = Math.round(Math.random())
-        if (!NewMatch(token, FENStart, {Side: player1Side, Connection: lobby.Player1}, {Side: 1 - player1Side, Connection: lobby.Player2})) {
-            lobby.Player1.send("Some error happened.")
-            lobby.Player2.send("Some error happened.")
-            lobby.Player1.close()
-            lobby.Player2.close()
+        // @ts-ignore
+        if (!NewMatch(token, FENStart, {Side: player1Side, Connection: lobby.Player1.Websocket, Username: lobby.Player1.Username}, {Side: 1 - player1Side, Connection: lobby.Player2.Websocket, Username: lobby.Player2.Username})) {
+            lobby.Player1.Websocket.send("Some error happened.")
+            // @ts-ignore
+            lobby.Player2.Websocket.send("Some error happened.")
+            lobby.Player1.Websocket.close()
+            // @ts-ignore
+            lobby.Player2.Websocket.close()
             Lobby.delete(token)
         }
         else {
-            lobby.Player1.send("ok")
-            lobby.Player2.send("ok")
+            lobby.Player1.Websocket.send("ok")
+            // @ts-ignore
+            lobby.Player2.Websocket.send("ok")
             Lobby.delete(token)
             StartMatch(Matches.get(token))
         }

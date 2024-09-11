@@ -1,11 +1,17 @@
 <script setup>
   import {useRouter} from "vue-router";
   import {websocket, WebSocketConnect} from "@/connection/websocket.js";
-  import {ref} from "vue";
+  import {onBeforeMount, ref} from "vue";
+  import {server, SessionID, SetSessionID} from "@/connection/connections.js";
   const finding = ref(false)
   const router = useRouter()
   const gameToken = ref(null)
   const waiting = ref(false)
+  onBeforeMount(() => {
+    if (!SessionID) {
+      router.push("/")
+    }
+  })
   function Login() {
     WebSocketConnect("match")
     websocket.onopen = () => {
@@ -52,6 +58,18 @@
     waiting.value = false
     websocket.close()
   }
+  function Logout() {
+    fetch(server + "logout", {
+      method: 'POST',
+      credentials: "include",
+      body: SessionID,
+    }).then((res) => {
+      if (res.ok) {
+        SetSessionID(null)
+        router.push("/")
+      }
+    })
+  }
 </script>
 
 <template>
@@ -75,6 +93,7 @@
       <button @click="QuitWaiting" class="pick-button">Quit waiting.</button>
     </div>
     <button @click="Login">New game</button>
+    <button @click="Logout">Log out</button>
   </div>
 </template>
 

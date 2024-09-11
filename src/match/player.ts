@@ -1,4 +1,5 @@
 export interface Player {
     Side: number,
-    Connection: any
+    Connection: any,
+    Username: string,
 }

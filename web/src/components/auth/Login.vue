@@ -1,23 +1,70 @@
 <script setup>
-import {ref} from "vue";
-import {server} from "@/connection/websocket.js";
+import {ref, onBeforeMount} from "vue";
 import {useRouter} from "vue-router";
+import {server, SessionID, SetSessionID} from "@/connection/connections.js";
 const router = useRouter()
+const loginFail = ref(false)
+const registerFail = ref(0)
 const register = ref(false)
-function SignIn(username, password) {
+onBeforeMount(() => {
+  if (SessionID) {
+    router.push("/dashboard")
+  }
+})
+function SignIn(username, password, remember) {
+  if (!username || !password) return
+  fetch(server + 'auth', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    credentials: "include",
+    body: new URLSearchParams ({
+      'type': 'login',
+      'username': username,
+      'password': password,
+      'remember': remember ? "true" : "false"
+    })
+  }).then((res) => {
+    if (res.ok) {
+      res.text().then((data) => {
+        SetSessionID(data)
+      })
+      router.push("/dashboard")
+    }
+    else loginFail.value = true
+  })
+}
+function CheckRegister(username, password1, password2) {
+  registerFail.value = 0
+  if (!username || !password1 || !password2) return
+  if (password1 !== password2) {
+    registerFail.value = 1
+    return
+  }
+  Register(username, password2)
+}
+function Register(username, password) {
   fetch(server + 'auth', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams ({
-      'type': 'login',
+      'type': 'register',
       'username': username,
       'password': password,
     })
   }).then((res) => {
     if (res.ok) {
-      router.push("/dashboard")
+      registerFail.value = 2
+      setTimeout(() => {
+        register.value = false
+        registerFail.value = 0
+      },1000)
+    }
+    else {
+      registerFail.value = -1
     }
   })
 }
@@ -28,20 +75,28 @@ function SignIn(username, password) {
     <div class="login-board display: flex; align-items: center; justify-content: center">
       <div v-if="!register" class="prompt">
         Sign in to your account.
-        <input v-model="user_name" style="margin-top: 15%" placeholder="Username" class="input"/>
-        <input v-model="password" type="password" placeholder="Password" class="input"/>
-        <div style="font-size: 0.6em">Don't have an account? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Register</span>
+        <input @keydown="loginFail = false" v-model.trim="user_name" style="margin-top: 15%" placeholder="Username" class="input"/>
+        <input @keydown="loginFail = false" @keydown.enter="SignIn(user_name, password, rememberMe)" v-model="password" type="password" placeholder="Password" class="input"/>
+        <div style="font-size: 0.6em">Don't have an account? <span @click="register = !register; loginFail = false" style="color: #1d90f5; cursor: pointer">Register</span>
         </div>
-        <button @click="SignIn(user_name, password)" class="confirm-button">Sign in</button>
+        <div>
+          <input v-model="rememberMe" style="transform: scale(1.5) translate(-5%); margin-right: 0.5vw" type="checkbox" id="remember" name="remember"/>
+          <label style="font-size: 0.5em" for="remember">Remember me.</label>
+        </div>
+        <div v-if="loginFail" style="font-size: 0.6em; color: orangered; margin-top: 5%">Wrong username or password.</div>
+        <button @click="SignIn(user_name, password, rememberMe)" class="confirm-button">Sign in</button>
       </div>
       <div v-else class="prompt">
         Create new account.
-        <input style="margin-top: 15%" placeholder="Username" class="input"/>
-        <input type="password" placeholder="Enter password" class="input"/>
-        <input type="password" placeholder="Re-enter password" class="input"/>
+        <input @keydown="registerFail = 0" v-model.trim="user_name_reg" style="margin-top: 15%" placeholder="Username" class="input"/>
+        <input @keydown="registerFail = 0" v-model="password_reg_1" type="password" placeholder="Enter password" class="input"/>
+        <input @keydown="registerFail = 0" @keydown.enter="CheckRegister(user_name_reg, password_reg_1, password_reg_2)" v-model="password_reg_2" type="password" placeholder="Re-enter password" class="input"/>
         <div style="font-size: 0.6em">Already a member? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Sign in</span>
         </div>
-        <button class="confirm-button">Register</button>
+        <div v-if="registerFail === 1" style="font-size: 0.6em; color: orangered; margin-top: 5%">Passwords do not match.</div>
+        <div v-if="registerFail === -1" style="font-size: 0.6em; color: orangered; margin-top: 5%">Username taken.</div>
+        <div v-if="registerFail === 2" style="font-size: 0.6em; color: forestgreen; margin-top: 5%">Registration successful.</div>
+        <button @click="CheckRegister(user_name_reg, password_reg_1, password_reg_2)" class="confirm-button">Register</button>
       </div>
      </div>
   </div>
@@ -65,7 +120,7 @@ function SignIn(username, password) {
   color: white;
   font-family: gilroy-bold, sans-serif;
   font-size: 0.65em;
-  margin-top: 10%;
+  margin-top: 7%;
 }
 .confirm-button:hover {
   background-color: #1d90f5;
