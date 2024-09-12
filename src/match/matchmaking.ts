@@ -1,4 +1,4 @@
-import {Matches, NewMatch, StartMatch} from "./match";
+import {Matches, NewMatch, StartOnlineMatch} from "./online_match";
 import {GenerateRandomToken} from "../auth/token";
 import {FENStart} from "../game/engine/game";
 import {Account, Active_sessions} from "../auth/account";
@@ -10,8 +10,8 @@ export interface MatchMaker {
 }
 export interface WaitingRoom {
     Token: string
-    Player1: Account | null
-    Player2: Account | null
+    Player1: Account | undefined
+    Player2: Account | undefined
 }
 export const Lobby = new Map<string, WaitingRoom>()
 export function ProcessMatchmakingRequest(ws: any, sessionId: string) {
@@ -20,8 +20,8 @@ export function ProcessMatchmakingRequest(ws: any, sessionId: string) {
         let token = GenerateRandomToken(8)
         Lobby.set(token, {
             Token: token,
-            Player1: null,
-            Player2: null,
+            Player1: undefined,
+            Player2: undefined,
         })
         MatchQueue[0].ws.send(token)
         MatchQueue[0].ws.on('message', (data: any) => {
@@ -89,7 +89,7 @@ export function ConnectToLobby(ws: any, token: any, sessionId: string): boolean 
         ws.close()
         return true
     }
-    ws.on('exit',(lobby: WaitingRoom) => {
+    ws.on('exit', (lobby: WaitingRoom) => {
         if (lobby.Player1) {
             lobby.Player1.Websocket.send("Match cancelled.")
             lobby.Player1.Websocket.close()
@@ -107,35 +107,31 @@ export function ConnectToLobby(ws: any, token: any, sessionId: string): boolean 
         ws.close()
         return true
     }
-    if (lobby.Player1 === null) {
-        // @ts-ignore
+    if (lobby.Player1 === undefined) {
         lobby.Player1 = Active_sessions.get(sessionId)
-        // @ts-ignore
+        if (!lobby.Player1) return false
         lobby.Player1.Websocket = ws
         return true
     }
-    else {
-        // @ts-ignore
+    else if (lobby.Player2 === undefined) {
         lobby.Player2 = Active_sessions.get(sessionId)
-        // @ts-ignore
+        if (!lobby.Player2) return false
         lobby.Player2.Websocket = ws
         let player1Side = Math.round(Math.random())
-        // @ts-ignore
-        if (!NewMatch(token, FENStart, {Side: player1Side, Connection: lobby.Player1.Websocket, Username: lobby.Player1.Username, Userid: lobby.Player1.Userid}, {Side: 1 - player1Side, Connection: lobby.Player2.Websocket, Username: lobby.Player2.Username, Userid: lobby.Player2.Userid})) {
+        if (!NewMatch(token, FENStart, {Side: player1Side, Connection: lobby.Player1.Websocket, Username: lobby.Player1.Username, Userid: lobby.Player1.Userid.toString()}, {Side: 1 - player1Side, Connection: lobby.Player2.Websocket, Username: lobby.Player2.Username, Userid: lobby.Player2.Userid.toString()})) {
             lobby.Player1.Websocket.send("Some error happened.")
-            // @ts-ignore
             lobby.Player2.Websocket.send("Some error happened.")
             lobby.Player1.Websocket.close()
-            // @ts-ignore
             lobby.Player2.Websocket.close()
             Lobby.delete(token)
         }
         else {
             lobby.Player1.Websocket.send("ok")
-            // @ts-ignore
             lobby.Player2.Websocket.send("ok")
             Lobby.delete(token)
-            StartMatch(Matches.get(token))
+            lobby.Player1.Websocket.removeAllListeners()
+            lobby.Player2.Websocket.removeAllListeners()
+            StartOnlineMatch(Matches.get(token))
         }
     }
     return true

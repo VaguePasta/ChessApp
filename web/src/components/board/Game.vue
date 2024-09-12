@@ -1,6 +1,6 @@
 <script setup>
   import Piece from "./Piece.vue";
-  import {ref} from "vue";
+  import {onMounted, ref} from "vue";
   import {ParseFEN} from "./FEN.js";
   import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "./Moves.js";
   import {websocket} from "@/connection/websocket.js";
@@ -9,6 +9,7 @@
   import CoordinatesY from "@/components/board/CoordinatesY.vue";
   import CoordinatesX from "@/components/board/CoordinatesX.vue";
   import Highlights from "@/components/board/Highlights.vue";
+  const router = useRouter()
   const moveSound = new Audio("/sounds/move.mp3")
   const captureSound = new Audio("/sounds/capture.mp3")
   const castlingSound = new Audio("/sounds/castle.mp3")
@@ -20,78 +21,82 @@
   const pendingMove = ref(0)
   const promoting = ref(false)
   const props = defineProps(['side', 'pos'])
-  let gameState = ParseFEN(props.pos)
-  const pieces = ref(gameState[0]);
-  const sideToMove = ref(gameState[1])
+  const pieces = ref(null)
+  const sideToMove = ref(null)
   const selectingPiece = ref(0)
   const movableSquare = ref([])
   const result = ref(null)
   const connectionLost = ref(null)
   const lastMoves = ref([])
-  if (props.side === 0) {
-    websocket.onmessage = (msg) => {
-    legalMoves.value = new Uint16Array(msg.data)
-    websocket.onmessage = (msg) => {
-      if (typeof msg.data === "string") {
-        if (msg.data === "The other player has lost connection.") {
-          connectionLost.value = msg.data
-          return
+  onMounted(() => {
+    if (!websocket) router.push("/dashboard")
+    else {
+      websocket.addEventListener('close', lostConnection)
+      if (props.side === 0) {
+        websocket.onmessage = (msg) => {
+          legalMoves.value = new Uint16Array(msg.data)
+          websocket.onmessage = (msg) => {
+            if (typeof msg.data === "string") {
+              websocket.removeEventListener('close', lostConnection)
+              if (msg.data === "The other player has lost connection.") {
+                connectionLost.value = msg.data
+                return
+              }
+              result.value = msg.data.toString()
+              if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+              if (msg.data.toString() === "You won.") {
+                winningSound.play()
+              } else if (msg.data.toString() === "You lost.") {
+                losingSound.play()
+              } else {
+                drawingSound.play()
+              }
+            } else {
+              if (sideToMove.value !== props.side) {
+                let moves = new Uint16Array(msg.data)
+                let move = moves[0]
+                Move(move, false)
+                legalMoves.value = moves.slice(1)
+              }
+            }
+          }
         }
-        websocket.onclose = () => {}
-        result.value = msg.data.toString()
-        if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
-        if (msg.data.toString() === "You won.") {
-          winningSound.play()
-        }
-        else if (msg.data.toString() === "You lost.") {
-          losingSound.play()
-        }
-        else {
-          drawingSound.play()
+      } else {
+        websocket.onmessage = (msg) => {
+          if (typeof msg.data === "string") {
+            websocket.removeEventListener('close', lostConnection)
+            if (msg.data === "The other player has lost connection.") {
+              connectionLost.value = msg.data
+              return
+            }
+            websocket.onclose = () => {
+            }
+            result.value = msg.data.toString()
+            if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+            if (msg.data.toString() === "You won.") {
+              winningSound.play()
+            } else if (msg.data.toString() === "You lost.") {
+              losingSound.play()
+            } else {
+              drawingSound.play()
+            }
+          } else {
+            if (sideToMove.value !== props.side) {
+              let moves = new Uint16Array(msg.data)
+              let move = moves[0]
+              Move(move, false)
+              legalMoves.value = moves.slice(1)
+            }
+          }
         }
       }
-      else {
-        if (sideToMove.value !== props.side) {
-          let moves = new Uint16Array(msg.data)
-          let move = moves[0]
-          Move(move, false)
-          legalMoves.value = moves.slice(1)
-        }
-      }
+      websocket.send("ok")
+      let gameState = ParseFEN(props.pos)
+      pieces.value = gameState[0]
+      sideToMove.value = gameState[1]
     }
-  }
-  }
-  else {
-    websocket.onmessage = (msg) => {
-      if (typeof msg.data === "string") {
-        if (msg.data === "The other player has lost connection.") {
-          connectionLost.value = msg.data
-          return
-        }
-        websocket.onclose = () => {}
-        result.value = msg.data.toString()
-        if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
-        if (msg.data.toString() === "You won.") {
-          winningSound.play()
-        }
-        else if (msg.data.toString() === "You lost.") {
-          losingSound.play()
-        }
-        else {
-          drawingSound.play()
-        }
-      }
-      else {
-        if (sideToMove.value !== props.side) {
-          let moves = new Uint16Array(msg.data)
-          let move = moves[0]
-          Move(move, false)
-          legalMoves.value = moves.slice(1)
-        }
-      }
-    }
-  }
-  websocket.onclose = () => {
+  })
+  function lostConnection() {
     connectionLost.value = "Connection lost."
   }
   function MoveIsLegal(move) {
@@ -382,12 +387,11 @@
     selectingPiece.value = 0
     movableSquare.value.length = 0
   }
-  const router = useRouter()
+
   function returnToMenu() {
     pieces.value.clear()
     router.push({path : "/dashboard"})
   }
-  websocket.send("ok")
 </script>
 
 <template>
@@ -413,13 +417,13 @@
 
     <div v-if="promoting || (result !== null)" class="modal-mask"/>
 
-    <div v-if="result !== null" class="end-popup">
+    <div v-if="result" class="end-popup">
       <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
       <button @click="returnToMenu" class="end-button">Back to main menu</button>
     </div>
 
-    <div v-if="connectionLost !== null" class="end-popup">
+    <div v-if="connectionLost" class="end-popup">
       <div style="font-size: 3.5vh; padding-bottom: 1vh;">{{connectionLost}}</div>
       <button @click="returnToMenu" class="end-button">Back to main menu.</button>
     </div>

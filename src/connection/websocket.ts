@@ -2,6 +2,7 @@ import {WebSocketServer, WebSocket } from 'ws'
 import {ConnectToLobby, ProcessMatchmakingRequest} from "../match/matchmaking";
 import * as http from "node:http";
 import internal from "node:stream";
+import {NewBotMatch} from "../match/bot_match";
 export class CustomWebSocket extends WebSocket {
     isAlive: boolean | undefined
 }
@@ -15,24 +16,28 @@ export class CustomWebsocketServer extends WebSocketServer<typeof CustomWebSocke
 }
 export const GameServer = new CustomWebsocketServer()
 export const MatchMakingServer = new CustomWebsocketServer()
-export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.Duplex, head: Buffer): boolean {
+export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.Duplex, head: Buffer) {
     // @ts-ignore
     let requestData = request.url.slice(1).split("/")
-    if (requestData[0] === "match") {
-        MatchMakingServer.handleUpgrade(request, socket, head, (ws) => {
-            if (ProcessMatchmakingRequest(ws, requestData[1])) MatchMakingServer.emit('connection', ws)
-            else socket.destroy()
-        })
-        return true
+    switch (requestData[0]) {
+        case "match":
+            MatchMakingServer.handleUpgrade(request, socket, head, (ws) => {
+                if (ProcessMatchmakingRequest(ws, requestData[1])) MatchMakingServer.emit('connection', ws)
+                else socket.destroy()
+            })
+            break
+        case "game":
+            GameServer.handleUpgrade(request, socket, head, (ws) => {
+                if (ConnectToLobby(ws, requestData[1], requestData[2])) GameServer.emit('connection', ws)
+                else socket.destroy()
+            })
+            break
+        case "bot":
+            GameServer.handleUpgrade(request, socket, head, (ws) => {
+                if (NewBotMatch(ws, requestData[1])) GameServer.emit('connection', 'ws')
+                else socket.destroy()
+            })
     }
-    else if (requestData[0] === "game") {
-        GameServer.handleUpgrade(request, socket, head, (ws) => {
-            if (ConnectToLobby(ws, requestData[1], requestData[2])) GameServer.emit('connection', ws)
-            else socket.destroy()
-        })
-        return true
-    }
-    return false
 }
 setInterval(() => {
     GameServer.clients.forEach((ws) => {

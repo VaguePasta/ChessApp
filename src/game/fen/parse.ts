@@ -83,51 +83,51 @@ export function ParseFEN(game: GameState, fenString: string): number {
     for (let index = 0; index < positions.length; index++) {
         switch (positions.charAt(index)) {
             case 'P':
-                game.PieceBitboards[Pieces.P] = game.PieceBitboards[Pieces.P] | (1n << (count))
+                game.PieceBitboards[Pieces.P] |= (1n << (count))
                 count++
                 break
             case 'N':
-                game.PieceBitboards[Pieces.N] = game.PieceBitboards[Pieces.N] | (1n << (count))
+                game.PieceBitboards[Pieces.N] |= (1n << (count))
                 count++
                 break
             case 'B':
-                game.PieceBitboards[Pieces.B] = game.PieceBitboards[Pieces.B] | (1n << (count))
+                game.PieceBitboards[Pieces.B] |= (1n << (count))
                 count++
                 break
             case 'R':
-                game.PieceBitboards[Pieces.R] = game.PieceBitboards[Pieces.R] | (1n << (count))
+                game.PieceBitboards[Pieces.R] |= (1n << (count))
                 count++
                 break
             case 'Q':
-                game.PieceBitboards[Pieces.Q] = game.PieceBitboards[Pieces.Q] | (1n << (count))
+                game.PieceBitboards[Pieces.Q] |= (1n << (count))
                 count++
                 break
             case 'K':
-                game.PieceBitboards[Pieces.K] = game.PieceBitboards[Pieces.K] | (1n << (count))
+                game.PieceBitboards[Pieces.K] |= (1n << (count))
                 count++
                 break
             case 'p':
-                game.PieceBitboards[Pieces.p] = game.PieceBitboards[Pieces.p] | (1n << (count))
+                game.PieceBitboards[Pieces.p] |= (1n << (count))
                 count++
                 break
             case 'n':
-                game.PieceBitboards[Pieces.n] = game.PieceBitboards[Pieces.n] | (1n << (count))
+                game.PieceBitboards[Pieces.n] |= (1n << (count))
                 count++
                 break
             case 'b':
-                game.PieceBitboards[Pieces.b] = game.PieceBitboards[Pieces.b] | (1n << (count))
+                game.PieceBitboards[Pieces.b] |= (1n << (count))
                 count++
                 break
             case 'r':
-                game.PieceBitboards[Pieces.r] = game.PieceBitboards[Pieces.r] | (1n << (count))
+                game.PieceBitboards[Pieces.r] |= (1n << (count))
                 count++
                 break
             case 'q':
-                game.PieceBitboards[Pieces.q] = game.PieceBitboards[Pieces.q] | (1n << (count))
+                game.PieceBitboards[Pieces.q] |= (1n << (count))
                 count++
                 break
             case 'k':
-                game.PieceBitboards[Pieces.k] = game.PieceBitboards[Pieces.k] | (1n << (count))
+                game.PieceBitboards[Pieces.k] |= (1n << (count))
                 count++
                 break
             case '1':

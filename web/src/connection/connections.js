@@ -6,6 +6,7 @@ export function SetSessionID(id) {
 }
 
 export async function ConnectToServer() {
+    SetSessionID(null)
     let res = await fetch(server + 'auth', {
         method: 'POST',
         headers: {

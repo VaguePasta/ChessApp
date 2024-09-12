@@ -21,7 +21,6 @@ export async function ManualLogin(username: string, password: string, remember: 
     })
     if (remember === "false") return [token]
     let selector: string = GenerateRandomToken(12), validator: string = GenerateRandomToken(12)
-    console.log(validator)
     const hashedValidator = createHash('sha256').update(validator).digest('base64')
     const insert = await DatabaseConn`insert into auth_tokens values(${selector}, ${hashedValidator}, ${user[0].user_id}, (select localtimestamp(0) + interval '15 days'))`
     if (insert.count === 0) return null
