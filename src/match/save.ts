@@ -8,3 +8,7 @@ export function CompressMatch(value: bigint) {
     }
     return LZString.compress(btoa(String.fromCharCode.apply(null, bytes)))
 }
+
+export function DecompressMatch(compressed: string): string {
+    return LZString.decompress(compressed)
+}

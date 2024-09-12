@@ -7,6 +7,7 @@ import {CountSetBit} from "../game/bitboard/bit_operations";
 import {Pieces, Side} from "../game/bitboard/bit_boards";
 import {CompressMatch} from "./save";
 import {ExecuteMove} from "../game/moves/execute_move";
+import {DatabaseConn} from "../database/init";
 export interface Match {
     Game: Game
     Moves: bigint
@@ -41,11 +42,12 @@ export function StartMatch(match: Match | undefined) {
                     game.LegalMoveList = GenerateMoves(game.GameState)
                     value.Connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
                 }
-                value.Connection.on('message', (data: any) => {
+                value.Connection.on('message', async (data: any) => {
                     if (game.GameState.SideToMove === value.Side) {
+                        console.log(parseInt(data).toString(2).padStart(16, '0'))
                         match.Moves += BigInt(parseInt(data)) << BigInt(16 * match.MoveCount)
                         match.MoveCount++
-                        switch(PlayMove(parseInt(data), match.Game)) {
+                        switch (PlayMove(parseInt(data), match.Game)) {
                             case 1:
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[index].Connection.send("You won.")
@@ -94,7 +96,9 @@ export function StartMatch(match: Match | undefined) {
                                 match.Players[1 - index].Connection.send(moves)
                                 return
                         }
-                        CompressMatch(match.Moves)
+                        let white_player = !match.Players[0].Side ? match.Players[0].Userid : match.Players[1].Userid
+                        let black_player = match.Players[0].Side ? match.Players[0].Userid : match.Players[1].Userid
+                        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (${white_player}, ${black_player}, ${CompressMatch(match.Moves)}, localtimestamp(0))`
                     }
                 })
                 value.Connection.on('close', () => {

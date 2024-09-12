@@ -29,8 +29,8 @@ function SignIn(username, password, remember) {
     if (res.ok) {
       res.text().then((data) => {
         SetSessionID(data)
+        router.push("/dashboard")
       })
-      router.push("/dashboard")
     }
     else loginFail.value = true
   })

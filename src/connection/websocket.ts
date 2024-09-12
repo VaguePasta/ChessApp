@@ -20,15 +20,15 @@ export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.
     let requestData = request.url.slice(1).split("/")
     if (requestData[0] === "match") {
         MatchMakingServer.handleUpgrade(request, socket, head, (ws) => {
-            ProcessMatchmakingRequest(ws)
-            MatchMakingServer.emit('connection', ws)
+            if (ProcessMatchmakingRequest(ws, requestData[1])) MatchMakingServer.emit('connection', ws)
+            else socket.destroy()
         })
         return true
     }
     else if (requestData[0] === "game") {
         GameServer.handleUpgrade(request, socket, head, (ws) => {
-            ConnectToLobby(ws, requestData[1])
-            GameServer.emit('connection', ws)
+            if (ConnectToLobby(ws, requestData[1], requestData[2])) GameServer.emit('connection', ws)
+            else socket.destroy()
         })
         return true
     }

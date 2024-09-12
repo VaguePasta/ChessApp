@@ -5,6 +5,8 @@ import http = require('http')
 import {ProcessUpgrades} from "./connection/websocket";
 import {Active_sessions, AutoLogin, LogOut, ManualLogin, Register} from "./auth/account";
 import cookie_parser from 'cookie-parser';
+import {DatabaseConn} from "./database/init";
+import {DecompressMatch} from "./match/save";
 app.use([
     express.text({
         type: "text/plain",
@@ -67,7 +69,10 @@ app.post('/logout', (req, res) => {
         res.end()
     })
 })
-server.listen(8080,() => {
+app.post('/save', (req, res) => {
+
+})
+server.listen(8080,async () => {
     StartChessEngine()
     console.log('Server started. Listening on 8080.')
 })
