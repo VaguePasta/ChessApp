@@ -34,7 +34,7 @@ export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.
             break
         case "bot":
             GameServer.handleUpgrade(request, socket, head, (ws) => {
-                if (NewBotMatch(ws, requestData[1])) GameServer.emit('connection', 'ws')
+                if (NewBotMatch(ws, requestData[1], requestData[2])) GameServer.emit('connection', ws)
                 else socket.destroy()
             })
     }
@@ -64,10 +64,4 @@ MatchMakingServer.on('connection', (ws) => {
 })
 GameServer.on('connection', (ws) => {
     ws.isAlive = true
-    ws.on('pong', () => {
-        ws.emit('alive', ws)
-    })
-    ws.on('alive', (ws) => {
-        ws.isAlive = true
-    })
 })

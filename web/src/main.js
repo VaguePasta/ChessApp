@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from "./App.vue";
-import Dashboard from "@/components/auth/Dashboard.vue";
-import Game from "@/components/board/Game.vue";
+import Dashboard from "@/components/dashboard/Dashboard.vue";
+import Game from "@/components/game/Game.vue";
 import {createRouter, createWebHistory} from "vue-router";
 import Login from "@/components/auth/Login.vue";
 import {ConnectToServer} from "@/connection/connections.js";

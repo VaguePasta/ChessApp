@@ -1,7 +1,9 @@
-import {Matches, NewMatch, StartOnlineMatch} from "./online_match";
+import {StartOnlineMatch} from "./online_match";
 import {GenerateRandomToken} from "../auth/token";
 import {FENStart} from "../game/engine/game";
 import {Account, Active_sessions} from "../auth/account";
+import {CustomWebSocket} from "../connection/websocket";
+import {Matches, NewMatch} from "./match";
 
 export const MatchQueue = new Array<MatchMaker>()
 export interface MatchMaker {
@@ -131,6 +133,20 @@ export function ConnectToLobby(ws: any, token: any, sessionId: string): boolean 
             Lobby.delete(token)
             lobby.Player1.Websocket.removeAllListeners()
             lobby.Player2.Websocket.removeAllListeners()
+            lobby.Player1.Websocket.on('pong', () => {
+                // @ts-ignore
+                lobby.Player1.Websocket.emit('alive', lobby.Player1.Websocket)
+            })
+            lobby.Player1.Websocket.on('alive', (ws: CustomWebSocket) => {
+                ws.isAlive = true
+            })
+            lobby.Player2.Websocket.on('pong', () => {
+                // @ts-ignore
+                lobby.Player2.Websocket.emit('alive', lobby.Player2.Websocket)
+            })
+            lobby.Player2.Websocket.on('alive', (ws: CustomWebSocket) => {
+                ws.isAlive = true
+            })
             StartOnlineMatch(Matches.get(token))
         }
     }

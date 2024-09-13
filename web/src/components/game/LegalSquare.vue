@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import {ref} from "vue";
-  import {GetTargetSquare} from "@/components/board/Moves.js";
+  import {GetTargetSquare} from "@/components/game/Moves.js";
   const props = defineProps(['move', 'side'])
   const top = ref(props.side ? 3.125 + (12.5 * Math.floor((63 - GetTargetSquare(props.move)) / 8)) + '%' : 3.125 + (12.5 * Math.floor(GetTargetSquare(props.move) / 8)) + '%')
   const left = ref(props.side ? 3.125 + (12.5 * ((63 - GetTargetSquare(props.move)) % 8)) + '%' : 3.125 + (12.5 * (GetTargetSquare(props.move) % 8)) + '%')

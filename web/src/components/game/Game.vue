@@ -4,11 +4,11 @@
   import {ParseFEN} from "./FEN.js";
   import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "./Moves.js";
   import {websocket} from "@/connection/websocket.js";
-  import LegalSquare from "@/components/board/LegalSquare.vue";
+  import LegalSquare from "@/components/game/LegalSquare.vue";
   import {useRouter} from "vue-router";
-  import CoordinatesY from "@/components/board/CoordinatesY.vue";
-  import CoordinatesX from "@/components/board/CoordinatesX.vue";
-  import Highlights from "@/components/board/Highlights.vue";
+  import CoordinatesY from "@/components/game/CoordinatesY.vue";
+  import CoordinatesX from "@/components/game/CoordinatesX.vue";
+  import Highlights from "@/components/game/Highlights.vue";
   const router = useRouter()
   const moveSound = new Audio("/sounds/move.mp3")
   const captureSound = new Audio("/sounds/capture.mp3")
@@ -94,6 +94,7 @@
       let gameState = ParseFEN(props.pos)
       pieces.value = gameState[0]
       sideToMove.value = gameState[1]
+      websocket.on
     }
   })
   function lostConnection() {

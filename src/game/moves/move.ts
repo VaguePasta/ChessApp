@@ -64,7 +64,7 @@ export function MoveCapture(move: number): boolean {
     return ((move & MoveFlagsMask) >>> 12 & MoveFlags.capture & MoveFlags.ep_capture & MoveFlags.bishop_promo_capture &
         MoveFlags.knight_promo_capture & MoveFlags.queen_promo_capture & MoveFlags.rook_promo_capture) !== 0
 }
-export function MovePromotion(move: number, side: number): number {
+export function MovePromotion(move: number, side: number = 1): number {
     let flag = (move & MoveFlagsMask) >>> 12
     if (flag === MoveFlags.bishop_promotion || flag === MoveFlags.bishop_promo_capture) {
         return side ? Pieces.b : Pieces.B
@@ -86,9 +86,9 @@ function IsCastling(move: number): number {
     else if (flag === MoveFlags.queen_castle) return -1
     return 0
 }
-export function GenMoveString(move: number, side: number) {
+export function GenMoveString(move: number) {
     let moveString: string = ""
-    let promotion = MovePromotion(move, side)
+    let promotion = MovePromotion(move)
     moveString += IndexToAlgebraic(BigInt(GetMoveSource(move)))
     moveString += IndexToAlgebraic(BigInt(GetMoveTarget(move)))
     if (promotion !== 0) moveString += PieceName.charAt(promotion)

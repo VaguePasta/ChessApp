@@ -67,7 +67,7 @@ app.post('/logout', (req, res) => {
         res.end()
     })
 })
-server.listen(8080,async () => {
+server.listen(8080, () => {
     StartChessEngine()
     console.log('Server started. Listening on 8080.')
 })
