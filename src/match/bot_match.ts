@@ -44,7 +44,7 @@ export function StartBotMatch(match: Match | undefined) {
             let legalMoves: Uint16Array | undefined
             stockfish.stdout.on('data', (data) => {
                 bestmove = data.toString()
-                if (bestmove.includes("info depth 7")) {
+                if (bestmove.includes("info depth 9")) {
                     if (game.GameState.SideToMove !== match.Players[0].Side) {
                         connection.emit('response', stockfish, bestmove, game, connection, positions)
                     } else {
@@ -56,6 +56,18 @@ export function StartBotMatch(match: Match | undefined) {
             if (!match.Players[0].Side) {
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
+            }
+            else {
+                game.LegalMoveList = GenerateMoves(game.GameState)
+                let firstMove = game.LegalMoveList.moves[Math.floor(Math.random() * (game.LegalMoveList.count))]
+                PlayMove(firstMove, game)
+                game.LegalMoveList = GenerateMoves(game.GameState)
+                legalMoves = new Uint16Array(game.LegalMoveList.count + 4)
+                legalMoves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
+                legalMoves[0] = firstMove
+                positions.position += GenMoveString(firstMove) + " "
+                stockfish.stdin.write(positions.position + "\n")
+                stockfish.stdin.write("go depth 9\n")
             }
             connection.on('message', (data: any) => {
                 if (game.GameState.SideToMove === match.Players[0].Side) {
@@ -70,7 +82,10 @@ export function StartBotMatch(match: Match | undefined) {
     })
 }
 function GetPlayerEval(engine: ChildProcessWithoutNullStreams, bestmove: string, game: Game, connection: any, positions: {position: string}) {
-
+    let evalmove = new Uint16Array(4)
+    evalmove[0] = 0
+    evalmove.set(ExtractWDL(bestmove), 1)
+    connection.send(evalmove)
     return ProcessBotMove(engine, AlgebraicToMove(bestmove, game.LegalMoveList), game, connection, positions)
 }
 function ProcessMove(engine: ChildProcessWithoutNullStreams, move: number, game: Game, connection: any, positions: {position: string}) {
@@ -78,7 +93,7 @@ function ProcessMove(engine: ChildProcessWithoutNullStreams, move: number, game:
         case 0:
             positions.position += GenMoveString(move) + " "
             engine.stdin.write(positions.position + "\n")
-            engine.stdin.write("go depth 7\n")
+            engine.stdin.write("go depth 9\n")
             break
         case 1:
             connection.send("You won.")
@@ -108,11 +123,11 @@ function ProcessBotMove(engine: ChildProcessWithoutNullStreams, move: number, ga
     switch (PlayMove(response, game)) {
         case 0:
             game.LegalMoveList = GenerateMoves(game.GameState)
-            legalMoves = new Uint16Array(game.LegalMoveList.count + 1)
+            legalMoves = new Uint16Array(game.LegalMoveList.count + 4)
             legalMoves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
             legalMoves[0] = response
             engine.stdin.write(positions.position + "\n")
-            engine.stdin.write("go depth 7\n")
+            engine.stdin.write("go depth 9\n")
             break
         case 1:
             connection.send(response)
@@ -143,9 +158,23 @@ function ProcessBotMove(engine: ChildProcessWithoutNullStreams, move: number, ga
     return legalMoves
 }
 function GetEvalAfterBotMove(moves: Uint16Array, connection: any, bestmove: string) {
-    //Append eval to moves
-    connection.send(moves)
+    let wdl = ExtractWDL(bestmove)
+    moves[moves.length - 3] = wdl[0]
+    moves[moves.length - 2] = wdl[1]
+    moves[moves.length - 1] = wdl[2]
+    setTimeout(() => {
+        connection.send(moves)
+    }, 1000)
 }
 function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
     return 0
+}
+export function ExtractMove(response: string): string {
+    let bestMoveIndex = response.lastIndexOf("bestmove")
+    return response.slice(bestMoveIndex + 9, bestMoveIndex + 13)
+}
+function ExtractWDL(response: string): number[] {
+    let wdl_index = response.indexOf("wdl", 45)
+    let cutoff_index = response.indexOf("nodes", 55) - 1
+    return response.slice(wdl_index + 4, cutoff_index).split(" ").map(Number)
 }

@@ -9,40 +9,40 @@
   function SetStyle() {
     switch (props.information.Piece[1] & 0b1111) {
       case 0:
-        styleClass = 'WhitePawn'
+        styleClass = 'white-pawn'
         break
       case 8:
-        styleClass = 'BlackPawn'
+        styleClass = 'black-pawn'
         break
       case 1:
-        styleClass = 'WhiteKnight'
+        styleClass = 'white-knight'
         break
       case 9:
-        styleClass = 'BlackKnight'
+        styleClass = 'black-knight'
         break
       case 2:
-        styleClass = 'WhiteBishop'
+        styleClass = 'white-bishop'
         break
       case 10:
-        styleClass = 'BlackBishop'
+        styleClass = 'black-bishop'
         break
       case 3:
-        styleClass = 'WhiteRook'
+        styleClass = 'white-rook'
         break
       case 11:
-        styleClass = 'BlackRook'
+        styleClass = 'black-rook'
         break
       case 4:
-        styleClass = 'WhiteQueen'
+        styleClass = 'white-queen'
         break
       case 12:
-        styleClass = 'BlackQueen'
+        styleClass = 'black-queen'
         break
       case 5:
-        styleClass = 'WhiteKing'
+        styleClass = 'white-king'
         break
       case 13:
-        styleClass = 'BlackKing'
+        styleClass = 'black-king'
         break
     }
   }
@@ -73,6 +73,7 @@
 </template>
 
 <style scoped>
+@import "../styles/pieces.css";
 @keyframes Move {
   from {
     left: v-bind(oldLeft);
@@ -96,41 +97,5 @@
 }
 .Selected {
   background-color: #648b5e;
-}
-.BlackPawn {
-  background-image: url("@/assets/board/black_pawn.svg");
-}
-.WhitePawn {
-  background-image: url("@/assets/board/white_pawn.svg");
-}
-.BlackKnight {
-  background-image: url("@/assets/board/black_knight.svg");
-}
-.WhiteKnight {
-  background-image: url("@/assets/board/white_knight.svg");
-}
-.BlackBishop {
-  background-image: url("@/assets/board/black_bishop.svg");
-}
-.WhiteBishop {
-  background-image: url("@/assets/board/white_bishop.svg");
-}
-.BlackRook {
-  background-image: url("@/assets/board/black_rook.svg");
-}
-.WhiteRook {
-  background-image: url("@/assets/board/white_rook.svg");
-}
-.BlackQueen {
-  background-image: url("@/assets/board/black_queen.svg");
-}
-.WhiteQueen {
-  background-image: url("@/assets/board/white_queen.svg");
-}
-.BlackKing {
-  background-image: url("@/assets/board/black_king.svg");
-}
-.WhiteKing {
-  background-image: url("@/assets/board/white_king.svg");
 }
 </style>

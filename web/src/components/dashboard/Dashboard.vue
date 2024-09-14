@@ -2,7 +2,8 @@
   import {useRouter} from "vue-router";
   import {onBeforeMount} from "vue";
   import {ConnectToServer, server, SessionID, SetSessionID} from "@/connection/connections.js";
-  import NewGame from "@/components/auth/NewGame.vue";
+  import NewGame from "@/components/dashboard/NewGame.vue";
+  import Rating from "@/components/game/vue/Rating.vue";
   const router = useRouter()
   onBeforeMount(async () => {
     if (!SessionID) {
@@ -25,15 +26,16 @@
 </script>
 
 <template>
-  <div style="display: flex">
-    <div style="display: flex; width: 33.33%; height: 100%;">
-      <div>Todo</div>
+  <div style="display: flex; min-width: 100%; min-height: 100%">
+    <div style="display: flex; width: 33.33%; min-height: 100%;">
+      <Rating/>
     </div>
     <NewGame/>
     <div style="display: flex; width: 33.33%; height: 100%;">
       <button @click="Logout">Log out</button>
     </div>
   </div>
+
 </template>
 
 <style scoped>

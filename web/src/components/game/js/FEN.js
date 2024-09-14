@@ -115,5 +115,10 @@ export function ParseFEN(FEN) {
             pieceCount++
         }
     }
-    return [pieces, gameInformation[1] === 'w' ? 0 : 1]
+    return pieces
+}
+
+export function ExtractSideToMove(FEN) {
+    let information = FEN.split(" ")
+    return information[1] === 'w' ? 0 : 1
 }

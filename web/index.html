@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ChessApp</title>
-    <style>
-         html, body {
-            min-width: 100%;
-            min-height: 100%;
-            margin: 0;
-            background-color: #525561;
-        }
-    </style>
 </head>
-<body id="app"></body>
-<script type="module" src="/src/main.js"></script>
+<body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+</body>
+<style>
+    html, body {
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+    }
+    #app {
+        height: inherit;
+        width: inherit;
+    }
+</style>
 </html>

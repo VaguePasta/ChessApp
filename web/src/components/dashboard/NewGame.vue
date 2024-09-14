@@ -33,7 +33,7 @@ function AcceptMatch() {
     if (ok.data === "ok") {
       websocket.onmessage = (config) => {
         finding.value = false
-        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: config.data[config.data.length - 1]}})
+        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: config.data[config.data.length - 1], b: 0}})
       }
     }
     else if (ok.data === "Match cancelled.") {
@@ -61,12 +61,20 @@ function QuitWaiting() {
   websocket.close()
 }
 function NewBotMatch() {
-  WebSocketConnect("bot/" + SessionID + "/0")
+  WebSocketConnect("bot/" + SessionID + "/1")
+  websocket.onclose = async () => {
+    SetSessionID(null)
+    await ConnectToServer()
+    if (!SessionID) {
+      finding.value = false
+      await router.push("/")
+    } else NewBotMatch()
+  }
   websocket.onmessage = (ok) => {
     if (ok.data === "ok") {
       websocket.onmessage = (config) => {
         finding.value = false
-        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: 0}})
+        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: 1, b: 1}})
       }
     }
   }
