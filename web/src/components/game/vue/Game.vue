@@ -4,6 +4,7 @@ import {onBeforeMount, ref} from "vue";
   import Board from "@/components/game/vue/Board.vue";
   import {useRouter} from "vue-router";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
+  import Rating from "@/components/game/vue/Rating.vue";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref({moves: []})
@@ -15,11 +16,12 @@ import {onBeforeMount, ref} from "vue";
     new Audio("/sounds/lose.mp3"),
     new Audio("/sounds/draw.mp3"),
   ])
+  const rating = ref({rate: [333, 333, 333]})
   onBeforeMount(() => {
     if (!websocket) router.push("/dashboard")
     else {
       websocket.addEventListener('close', lostConnection)
-      if (props.side === 0) {
+      if (!props.side) {
         websocket.onmessage = (msg) => {
           legalMoves.value.moves = new Uint16Array(msg.data)
           defineOnMessage()
@@ -47,24 +49,21 @@ import {onBeforeMount, ref} from "vue";
         } else {
           sounds.value[2].play()
         }
-      } else if (sideToMove.value !== props.side) {
-          let moves = new Uint16Array(msg.data)
-          if (props.bot === "1" && moves[0] === 0) {
-            let temp = moves[1]
-            moves[1] = moves[3]
-            moves[3] = temp
-            console.log(moves.slice(1))
+      }
+      else {
+        let moves = new Uint16Array(msg.data)
+        if (props.bot === "1" && moves[0] === 0) {
+          if (sideToMove.value !== props.side) {
+            rating.value.rate = [moves[3], moves[2], moves[1]]
           }
           else {
-            if (props.bot === "1") {
-              legalMoves.value.moves = moves.slice(0, moves.length - 3)
-              console.log(moves.slice(moves.length - 3, moves.length))
-            }
-            else {
-              legalMoves.value.moves = moves
-            }
+            rating.value.rate = [moves[1], moves[2], moves[3]]
           }
         }
+        else if (sideToMove.value !== props.side) {
+          legalMoves.value.moves = new Uint16Array(msg.data)
+        }
+      }
     }
   }
   function lostConnection() {
@@ -79,16 +78,19 @@ import {onBeforeMount, ref} from "vue";
 </script>
 
 <template>
-  <Board @change-side="ChangeSide" :side="props.side" :sideToMove="sideToMove" :pos="props.pos" :legalMoves="legalMoves"/>
-  <div v-if="result" class="end-popup">
-    <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
-    <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
-    <button @click="returnToMenu" class="end-button">Back to main menu</button>
-  </div>
-  <div v-if="result" class="modal-mask"/>
-  <div v-if="connectionLost" class="end-popup">
-    <div style="font-size: 3.5vh; padding-bottom: 1vh;">{{connectionLost}}</div>
-    <button @click="returnToMenu" class="end-button">Back to main menu.</button>
+  <div style="position: absolute; width:80%; height: 90vh; left: 50%; top: 50%; transform: translate(-50%, -50%)">
+    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="props.side"/>
+    <Board @change-side="ChangeSide" :side="props.side" :sideToMove="sideToMove" :pos="props.pos" :legalMoves="legalMoves"/>
+    <div v-if="result" class="end-popup">
+      <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
+      <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
+      <button @click="returnToMenu" class="end-button">Back to main menu</button>
+    </div>
+    <div v-if="result" class="modal-mask"/>
+    <div v-if="connectionLost" class="end-popup">
+      <div style="font-size: 3.5vh; padding-bottom: 1vh;">{{connectionLost}}</div>
+      <button @click="returnToMenu" class="end-button">Back to main menu.</button>
+    </div>
   </div>
 </template>
 
@@ -146,5 +148,6 @@ import {onBeforeMount, ref} from "vue";
   width: 100%;
   height: 100%;
   z-index: 3;
+  top: 0;
 }
 </style>

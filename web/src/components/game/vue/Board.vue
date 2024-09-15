@@ -376,6 +376,7 @@ function KnightPromote() {
   width: 100%;
   height: 100%;
   z-index: 3;
+  top: 0;
 }
 .promotion-popup {
   z-index: 4;

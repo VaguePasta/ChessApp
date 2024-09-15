@@ -66,7 +66,7 @@
   <div class="Piece" @click="$emit('selecting-piece', $event, props.information.Piece[0])"
        :key="oldPos"
   :class="[styleClass,
-   props.information.Selected ? 'Selected' : '', ((props.side !== (props.information.Piece[1] >> 3 & 1)) || props.sideToMove !== props.side) ? 'Opponent' : '']"
+  props.information.Selected ? 'Selected' : '', ((props.side !== (props.information.Piece[1] >> 3 & 1)) || props.sideToMove !== props.side) ? 'Opponent' : '']"
   :style="[ props.side === 0 ?
       {'left': ((props.information.Piece[2]) % 8) * 12.5 + '%', 'top': Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%'} :
       {'left': 87.5 - ((props.information.Piece[2]) % 8) * 12.5 + '%', 'top': 87.5 - Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%'}]"/>

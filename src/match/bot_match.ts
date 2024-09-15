@@ -5,24 +5,34 @@ import {Active_sessions} from "../auth/account";
 import {CustomWebSocket} from "../connection/websocket";
 import {GenerateMoves} from "../game/moves/movegen";
 import {ChildProcessWithoutNullStreams, spawn} from "node:child_process";
-import {GenMoveString, MoveList} from "../game/moves/move";
-export function NewBotMatch(ws: any, sessionID: string, side: string): boolean {
+import {GenMoveString, MakeMove, MoveFlags, MoveList} from "../game/moves/move";
+import {AlgebraicToIndex} from "../game/bitboard/conversions";
+export function NewBotMatch(ws: any, sessionID: string, side: string, elo: number, personality: string): boolean {
     let user = Active_sessions.get(sessionID)
     if (!user) return false
     let token = GenerateRandomToken(8)
     if (!NewMatch(token, FENStart, {Side: parseInt(side), Connection: ws, Username: user.Username, Userid: user.Userid.toString()})) return false
-    StartBotMatch(Matches.get(token))
+    StartBotMatch(Matches.get(token), personality, elo)
     return true
 }
-export function StartBotMatch(match: Match | undefined) {
+export function StartBotMatch(match: Match | undefined, personality: string, elo: number) {
     if (!match) return
     let connection = match.Players[0].Connection
     // @ts-ignore
-    const stockfish = spawn(process.env.STOCKFISH_DIRECTORY.toString(), {shell: false, windowsHide: true})
-    stockfish.on('spawn', () => {
-        stockfish.stdin.write("setoption name UCI_ShowWDL value true\n")
-        stockfish.stdin.write("uci\n")
-        stockfish.stdin.write("position startpos\n")
+    const evaluator = spawn(process.env.STOCKFISH_DIRECTORY.toString(), {shell: false, windowsHide: true})
+    // @ts-ignore
+    const opponent = spawn(process.env.RODENT_DIRECTORY.toString(), {shell: false, windowsHide: true})
+    evaluator.on('spawn', () => {
+        evaluator.stdin.write("setoption name UCI_ShowWDL value true\n")
+        evaluator.stdin.write("uci\n")
+        evaluator.stdin.write("position startpos\n")
+    })
+    opponent.on('spawn', () => {
+        opponent.stdin.write("uci\n")
+        opponent.stdin.write("setoption name UCI_LimitStrength value true\n")
+        opponent.stdin.write("setoption name UCI_Elo value " + elo + "\n")
+        opponent.stdin.write("setoption name Personality value " + personality + "\n")
+        opponent.stdin.write("position startpos\n")
     })
     connection.send("ok")
     connection.send(FENStart)
@@ -35,21 +45,22 @@ export function StartBotMatch(match: Match | undefined) {
     })
     connection.on('close', () => {
         Matches.delete(match.Token)
-        stockfish.stdin.write("quit\n")
+        evaluator.stdin.write("quit\n")
+        opponent.stdin.write("quit\n")
     })
     const positions = { position: "position startpos moves "}
-    let bestmove: string = ""
     connection.on('message', (data: any) => {
         if (data.toString() === "ok") {
-            let legalMoves: Uint16Array | undefined
-            stockfish.stdout.on('data', (data) => {
-                bestmove = data.toString()
-                if (bestmove.includes("info depth 9")) {
-                    if (game.GameState.SideToMove !== match.Players[0].Side) {
-                        connection.emit('response', stockfish, bestmove, game, connection, positions)
-                    } else {
-                        connection.emit('bot-eval', legalMoves, connection, bestmove)
-                    }
+            evaluator.stdout.on('data', (data: any) => {
+                let evaluation = data.toString()
+                if (evaluation.includes("info depth 9")) {
+                    connection.emit('eval', ExtractWDL(evaluation))
+                }
+            })
+            opponent.stdout.on('data', (data: any) => {
+                let response = data.toString()
+                if (response.includes("bestmove")) {
+                    connection.emit('response', ExtractMove(response))
                 }
             })
             let game = match.Game
@@ -59,115 +70,141 @@ export function StartBotMatch(match: Match | undefined) {
             }
             else {
                 game.LegalMoveList = GenerateMoves(game.GameState)
-                let firstMove = game.LegalMoveList.moves[Math.floor(Math.random() * (game.LegalMoveList.count))]
-                PlayMove(firstMove, game)
-                game.LegalMoveList = GenerateMoves(game.GameState)
-                legalMoves = new Uint16Array(game.LegalMoveList.count + 4)
-                legalMoves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
-                legalMoves[0] = firstMove
-                positions.position += GenMoveString(firstMove) + " "
-                stockfish.stdin.write(positions.position + "\n")
-                stockfish.stdin.write("go depth 9\n")
+                GetFirstMove(opponent)
             }
             connection.on('message', (data: any) => {
                 if (game.GameState.SideToMove === match.Players[0].Side) {
-                    ProcessMove(stockfish, parseInt(data), game, connection, positions)
+                    if (ProcessMove(parseInt(data), game, positions, connection)) {
+                        GetEvaluation(evaluator, positions)
+                        GetResponse(opponent, positions)
+                    }
                 }
             })
-            connection.on('response', (engine: ChildProcessWithoutNullStreams, bestmove: string, game: Game, connection: any, positions: {position: string}) => {
-                legalMoves = GetPlayerEval(engine, bestmove, game, connection, positions)
+            connection.on('response', (algebraic: string) => {
+                let move = AlgebraicToMove(algebraic, game.LegalMoveList)
+                let legalMoves = ProcessBotMove(move, game, connection)
+                if (legalMoves) {
+                    positions.position += algebraic + " "
+                    setTimeout(() => {
+                        SendResponse(connection, legalMoves)
+                        GetEvaluation(evaluator, positions)
+                    }, 1000)
+                }
             })
-            connection.on('bot-eval', GetEvalAfterBotMove)
+            connection.on('eval', (evaluations: number[]) => {
+                SendEvaluation(connection, evaluations)
+            })
         }
     })
 }
-function GetPlayerEval(engine: ChildProcessWithoutNullStreams, bestmove: string, game: Game, connection: any, positions: {position: string}) {
-    let evalmove = new Uint16Array(4)
-    evalmove[0] = 0
-    evalmove.set(ExtractWDL(bestmove), 1)
-    connection.send(evalmove)
-    return ProcessBotMove(engine, AlgebraicToMove(bestmove, game.LegalMoveList), game, connection, positions)
+function GetFirstMove(opponent: ChildProcessWithoutNullStreams) {
+    opponent.stdin.write("go depth 9\n")
 }
-function ProcessMove(engine: ChildProcessWithoutNullStreams, move: number, game: Game, connection: any, positions: {position: string}) {
+function SendResponse(connection: any, legalMoveList: Uint16Array | number) {
+        connection.send(legalMoveList)
+}
+function SendEvaluation(connection: any, evaluations: number[]) {
+    let evals = new Uint16Array(4)
+    evals.set(evaluations, 1)
+    evals[0] = 0
+    connection.send(evals)
+}
+function GetResponse(opponent: ChildProcessWithoutNullStreams, positions: {position: string}) {
+    opponent.stdin.write(positions.position + "\n")
+    opponent.stdin.write("go depth 9\n")
+}
+function GetEvaluation(evaluator: ChildProcessWithoutNullStreams, positions: {position: string}) {
+    evaluator.stdin.write(positions.position + "\n")
+    evaluator.stdin.write("go depth 9\n")
+}
+function ProcessMove(move: number, game: Game, positions: {position: string}, connection: any): number {
     switch (PlayMove(move, game)) {
         case 0:
             positions.position += GenMoveString(move) + " "
-            engine.stdin.write(positions.position + "\n")
-            engine.stdin.write("go depth 9\n")
-            break
+            return 1
         case 1:
             connection.send("You won.")
             connection.close()
-            return
+            return 0
         case 2:
             connection.send("Stalemate.")
             connection.close()
-            return
+            return 0
         case 3:
             connection.send("Draw by 50-move rule.")
             connection.close()
-            return
+            return 0
         case 4:
             connection.send("Draw by threefold repetition.")
             connection.close()
-            return
+            return 0
         case 5:
             connection.send("Draw by insufficient material.")
             connection.close()
+            return 0
     }
 }
-function ProcessBotMove(engine: ChildProcessWithoutNullStreams, move: number, game: Game, connection: any, positions: {position: string}) {
-    let response = game.LegalMoveList.moves[Math.floor(Math.random() * (game.LegalMoveList.count))]
-    positions.position += GenMoveString(response) + " "
+function ProcessBotMove(move: number, game: Game, connection: any) {
     let legalMoves
-    switch (PlayMove(response, game)) {
+    switch (PlayMove(move, game)) {
         case 0:
             game.LegalMoveList = GenerateMoves(game.GameState)
-            legalMoves = new Uint16Array(game.LegalMoveList.count + 4)
+            legalMoves = new Uint16Array(game.LegalMoveList.count + 1)
             legalMoves.set(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count), 1)
-            legalMoves[0] = response
-            engine.stdin.write(positions.position + "\n")
-            engine.stdin.write("go depth 9\n")
-            break
+            legalMoves[0] = move
+            return legalMoves
         case 1:
-            connection.send(response)
+            connection.send(move)
             connection.send("You lost.")
             connection.close()
-            break
+            return 0
         case 2:
-            connection.send(response)
+            connection.send(move)
             connection.send("Stalemate.")
             connection.close()
-            break
+            return 0
         case 3:
-            connection.send(response)
+            connection.send(move)
             connection.send("Draw by 50-move rule.")
             connection.close()
-            break
+            return 0
         case 4:
-            connection.send(response)
+            connection.send(move)
             connection.send("Draw by threefold repetition.")
             connection.close()
-            break
+            return 0
         case 5:
-            connection.send(response)
+            connection.send(move)
             connection.send("Draw by insufficient material.")
             connection.close()
-            break
+            return 0
     }
-    return legalMoves
-}
-function GetEvalAfterBotMove(moves: Uint16Array, connection: any, bestmove: string) {
-    let wdl = ExtractWDL(bestmove)
-    moves[moves.length - 3] = wdl[0]
-    moves[moves.length - 2] = wdl[1]
-    moves[moves.length - 1] = wdl[2]
-    setTimeout(() => {
-        connection.send(moves)
-    }, 1000)
 }
 function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
-    return 0
+    let source = AlgebraicToIndex(algebraic.slice(0, 2))
+    let target = AlgebraicToIndex(algebraic.slice(2, 4))
+    if (algebraic.length === 5) {
+        switch (algebraic[4]) {
+            case 'q':
+                if (source % 8 === target % 8)
+                    return MakeMove(source, target, MoveFlags.queen_promotion)
+                else return MakeMove(source, target, MoveFlags.queen_promo_capture)
+            case 'r':
+                if (source % 8 === target % 8)
+                    return MakeMove(source, target, MoveFlags.rook_promotion)
+                else return MakeMove(source, target, MoveFlags.rook_promo_capture)
+            case 'b':
+                if (source % 8 === target % 8)
+                    return MakeMove(source, target, MoveFlags.bishop_promotion)
+                else return MakeMove(source, target, MoveFlags.bishop_promo_capture)
+            case 'n':
+                if (source % 8 === target % 8)
+                    return MakeMove(source, target, MoveFlags.knight_promotion)
+                else return MakeMove(source, target, MoveFlags.knight_promo_capture)
+        }
+    }
+    let move = MakeMove(source, target, MoveFlags.quiet_moves)
+    return <number>legalMoveList.moves.find((element) => (element & 0xfff) === move)
 }
 export function ExtractMove(response: string): string {
     let bestMoveIndex = response.lastIndexOf("bestmove")

@@ -3,7 +3,6 @@
   import {onBeforeMount} from "vue";
   import {ConnectToServer, server, SessionID, SetSessionID} from "@/connection/connections.js";
   import NewGame from "@/components/dashboard/NewGame.vue";
-  import Rating from "@/components/game/vue/Rating.vue";
   const router = useRouter()
   onBeforeMount(async () => {
     if (!SessionID) {
@@ -28,7 +27,6 @@
 <template>
   <div style="display: flex; min-width: 100%; min-height: 100%">
     <div style="display: flex; width: 33.33%; min-height: 100%;">
-      <Rating/>
     </div>
     <NewGame/>
     <div style="display: flex; width: 33.33%; height: 100%;">

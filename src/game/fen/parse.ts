@@ -31,7 +31,7 @@ export function ParseFEN(game: GameState, fenString: string): number {
     }
     //Parse en passant square
     if (FEN[FENfields.en_passant] !== '-') {
-        let enPassantSq = Number(AlgebraicToIndex(FEN[FENfields.en_passant]))
+        let enPassantSq = AlgebraicToIndex(FEN[FENfields.en_passant])
         if (enPassantSq === -1) {
             return -1
         }

@@ -12,6 +12,7 @@ export async function ConnectToServer() {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
+        credentials: "same-origin",
         body: new URLSearchParams ({
             'type': 'login',
         })

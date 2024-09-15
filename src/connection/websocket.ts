@@ -34,7 +34,7 @@ export function ProcessUpgrades(request: http.IncomingMessage, socket: internal.
             break
         case "bot":
             GameServer.handleUpgrade(request, socket, head, (ws) => {
-                if (NewBotMatch(ws, requestData[1], requestData[2])) GameServer.emit('connection', ws)
+                if (NewBotMatch(ws, requestData[1], requestData[2], parseInt(requestData[3]), requestData[4])) GameServer.emit('connection', ws)
                 else socket.destroy()
             })
     }

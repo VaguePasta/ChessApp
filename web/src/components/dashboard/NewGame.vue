@@ -3,12 +3,14 @@ import {ref} from "vue";
 import {ConnectToServer, SessionID, SetSessionID} from "@/connection/connections.js";
 import {websocket, WebSocketConnect} from "@/connection/websocket.js";
 import {useRouter} from "vue-router";
+import ChooseBot from "@/components/dashboard/ChooseBot.vue";
 const finding = ref(false)
 const gameToken = ref(null)
 const waiting = ref(false)
 const router = useRouter()
+const choosing = ref(false)
 function FindMatch() {
-  WebSocketConnect("match")
+  WebSocketConnect("match/" + SessionID)
   finding.value = true
   websocket.onclose = async () => {
     SetSessionID(null)
@@ -25,7 +27,7 @@ function FindMatch() {
   }
 }
 function AcceptMatch() {
-  WebSocketConnect("game/" + gameToken.value)
+  WebSocketConnect("game/" + gameToken.value + "/" + SessionID)
   websocket.onopen = () => {
     waiting.value = true
   }
@@ -60,8 +62,8 @@ function QuitWaiting() {
   waiting.value = false
   websocket.close()
 }
-function NewBotMatch() {
-  WebSocketConnect("bot/" + SessionID + "/1")
+function NewBotMatch(side, elo, type) {
+  WebSocketConnect("bot/" + SessionID + "/" + side.toString() + "/" + elo + "/" + type)
   websocket.onclose = async () => {
     SetSessionID(null)
     await ConnectToServer()
@@ -74,7 +76,7 @@ function NewBotMatch() {
     if (ok.data === "ok") {
       websocket.onmessage = (config) => {
         finding.value = false
-        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: 1, b: 1}})
+        router.push({path: "/game", query: {p: config.data.slice(0, -1), g: side, b: 1}})
       }
     }
   }
@@ -102,7 +104,7 @@ function HoverFindMatch(e) {
       <button @mousemove="HoverFindMatch" @click="StopSearch" class="pick-button">Quit searching</button>
     </div>
   </div>
-  <div v-if="finding" class="new-mask"/>
+  <div v-if="finding || waiting" class="new-mask"/>
   <div v-if="gameToken !== null" class="new-popup">
     <div style="display: flex; align-items: center; justify-content: center; flex-direction: column">
       <div style="padding: 5px">Opponent found. Enter match?</div>
@@ -116,51 +118,15 @@ function HoverFindMatch(e) {
   </div>
   <div style="display: flex; width: 33.33%; height: 100%; align-items: center; flex-direction: column">
     <button @mousemove="HoverFindMatch" class="find-match" @click="FindMatch">Find match</button>
-    <button @mousemove="HoverFindMatch" class="find-match" @click="NewBotMatch">Practice against computer</button>
+    <button @mousemove="HoverFindMatch" class="find-match" @click="choosing = true">Practice against computer</button>
   </div>
+
+  <div @click="choosing=false;" v-if="choosing" class="new-mask"/>
+  <ChooseBot @new-bot-match="NewBotMatch" v-if="choosing"/>
 </template>
 
 <style scoped>
-.new-popup {
-  background-color: #082c3a;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: fit-content;
-  height: fit-content;
-  border-radius: 10px;
-  padding: 2.5vw;
-  box-sizing: border-box;
-  border: 2px solid #ad965e;
-  z-index: 3;
-  animation: zoom-in 0.2s;
-  font-family: gilroy-bold, sans-serif;
-  font-size: 1.5vw;
-}
-@keyframes zoom-in {
-  from {
-    transform: scale(0.9, 0.9) translate(-55.6%, -55.6%);
-  }
-  to {
-    transform: scale(1, 1) translate(-50%, -50%);
-  }
-}
-.pick-button {
-  background-color: #2d3339;
-  border: 2px solid #ad965e;
-  padding: 10px;
-  margin: 1vw 5px 5px 5px;
-  font-family: gilroy-bold, sans-serif;
-  font-size: 1.2vw;
-  border-radius: 5px;
-  color: white;
-}
+@import "UI.css";
 .pick-button:hover {
   background: v-bind(hover);
 }
@@ -182,10 +148,11 @@ function HoverFindMatch(e) {
   width: 45%;
   margin: 5%;
   padding: 5%;
-  font-size: 3vh;
+  font-size: 20px;
   border-radius: 3vh;
   font-family: gilroy-bold, sans-serif;
   border: 2px solid #b1a27f;
+  overflow: clip;
 }
 .find-match:hover {
   background: v-bind(hover);
