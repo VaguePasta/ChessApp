@@ -49,6 +49,7 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
         opponent.stdin.write("quit\n")
     })
     const positions = { position: "position startpos moves "}
+    let responseFromEngine = ""
     connection.on('message', (data: any) => {
         if (data.toString() === "ok") {
             evaluator.stdout.on('data', (data: any) => {
@@ -60,7 +61,15 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
             opponent.stdout.on('data', (data: any) => {
                 let response = data.toString()
                 if (response.includes("bestmove")) {
-                    connection.emit('response', ExtractMove(response))
+                    if (response.length >= 13) {
+                        connection.emit('response', ExtractMove(response))
+                    }
+                    else responseFromEngine += response
+                }
+                else if (responseFromEngine) {
+                    responseFromEngine += response
+                    connection.emit('response', ExtractMove(responseFromEngine))
+                    responseFromEngine = ""
                 }
             })
             let game = match.Game
@@ -154,27 +163,27 @@ function ProcessBotMove(move: number, game: Game, connection: any) {
             legalMoves[0] = move
             return legalMoves
         case 1:
-            connection.send(move)
+            connection.send(new Uint16Array([move]))
             connection.send("You lost.")
             connection.close()
             return 0
         case 2:
-            connection.send(move)
+            connection.send(new Uint16Array([move]))
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
-            connection.send(move)
+            connection.send(new Uint16Array([move]))
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
-            connection.send(move)
+            connection.send(new Uint16Array([move]))
             connection.send("Draw by threefold repetition.")
             connection.close()
             return 0
         case 5:
-            connection.send(move)
+            connection.send(new Uint16Array([move]))
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0

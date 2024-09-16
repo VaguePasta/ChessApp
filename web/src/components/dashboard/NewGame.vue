@@ -70,7 +70,7 @@ function NewBotMatch(side, elo, type) {
     if (!SessionID) {
       finding.value = false
       await router.push("/")
-    } else NewBotMatch()
+    } else NewBotMatch(side, elo, type)
   }
   websocket.onmessage = (ok) => {
     if (ok.data === "ok") {
