@@ -8,9 +8,10 @@ import {onBeforeMount, ref} from "vue";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref({moves: []})
-  const props = defineProps(['side', 'pos', 'bot'])
+  const props = defineProps(['pos', 'bot'])
   const router = useRouter()
-  const sideToMove = ref(ExtractSideToMove(props.pos))
+  const information = atob(props.pos)
+  const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
   const sounds = ref([
     new Audio("/sounds/win.mp3"),
     new Audio("/sounds/lose.mp3"),
@@ -21,7 +22,7 @@ import {onBeforeMount, ref} from "vue";
     if (!websocket) router.push("/dashboard")
     else {
       websocket.addEventListener('close', lostConnection)
-      if (!props.side) {
+      if (information[information.length - 1] === "0") {
         websocket.onmessage = (msg) => {
           legalMoves.value.moves = new Uint16Array(msg.data)
           defineOnMessage()
@@ -41,7 +42,7 @@ import {onBeforeMount, ref} from "vue";
           return
         }
         result.value = msg.data.toString()
-        if (props.side === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+        if (parseInt(information[information.length - 1]) === sideToMove.value) sideToMove.value = 1 - sideToMove.value
         if (msg.data.toString() === "You won.") {
           sounds.value[0].play()
         } else if (msg.data.toString() === "You lost.") {
@@ -53,14 +54,14 @@ import {onBeforeMount, ref} from "vue";
       else {
         let moves = new Uint16Array(msg.data)
         if (props.bot === "1" && moves[0] === 0) {
-          if (sideToMove.value !== props.side) {
+          if (sideToMove.value !== parseInt(information[information.length - 1])) {
             rating.value.rate = [moves[3], moves[2], moves[1]]
           }
           else {
             rating.value.rate = [moves[1], moves[2], moves[3]]
           }
         }
-        else if (sideToMove.value !== props.side) {
+        else if (sideToMove.value !== parseInt(information[information.length - 1])) {
           legalMoves.value.moves = new Uint16Array(msg.data)
         }
       }
@@ -79,8 +80,8 @@ import {onBeforeMount, ref} from "vue";
 
 <template>
   <div style="position: absolute; width:80%; height: 90vh; left: 50%; top: 50%; transform: translate(-50%, -50%)">
-    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="props.side"/>
-    <Board @change-side="ChangeSide" :side="props.side" :sideToMove="sideToMove" :pos="props.pos" :legalMoves="legalMoves"/>
+    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="information.slice(-1)"/>
+    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
     <div v-if="result" class="end-popup">
       <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>

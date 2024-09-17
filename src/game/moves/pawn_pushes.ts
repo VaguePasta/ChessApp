@@ -6,8 +6,8 @@ const rank5: bigint = 0x00000000FF000000n
 const rank4: bigint = 0x000000FF00000000n
 export function GeneratePawnPushes(pawnBoard: bigint, empty: bigint, side: number, moveList: MoveList) {
     if (side === Side.white) {
-        let whiteSingle = (pawnBoard >> 8n) & ((1n << 56n) - 1n) & empty
-        let whiteDouble = (whiteSingle >> 8n) & ((1n << 56n) - 1n) & empty & rank4
+        let whiteSingle = (pawnBoard >> 8n) & 0xffffffffffffffn & empty
+        let whiteDouble = (whiteSingle >> 8n) & 0xffffffffffffffn & empty & rank4
         while (whiteSingle) {
             let leastSingle = CountSetBit((whiteSingle & -whiteSingle) - 1n)
             if (leastSingle <= 7n) {

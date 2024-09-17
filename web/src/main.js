@@ -6,7 +6,7 @@ import {createRouter, createWebHistory} from "vue-router";
 import Login from "@/components/auth/Login.vue";
 import {ConnectToServer} from "@/connection/connections.js";
 const routes = [
-    { path: '/game', component: Game, props: route => ({side : parseInt(route.query.g), pos: route.query.p, bot: route.query.b})},
+    { path: '/game', component: Game, props: route => ({pos: route.query.p, bot: route.query.b})},
     { path: '/dashboard', component: Dashboard},
     { path: '/', component: Login},
     { path: '/:pathMatch(.*)*', redirect: "/"}

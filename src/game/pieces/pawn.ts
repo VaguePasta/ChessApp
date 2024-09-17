@@ -11,8 +11,8 @@ function MaskPawnAttack(side: number, index: bigint): bigint {
     let attackBoard: bigint = 0n
     let pieceBoard: bigint = 1n << index
     if (!side) {
-        attackBoard |= ((pieceBoard >> 7n) & ((1n << (64n - 7n)) - 1n) & NotAFile)
-        attackBoard |= ((pieceBoard >> 9n) & ((1n << (64n - 9n)) - 1n) & NotHFile)
+        attackBoard |= ((pieceBoard >> 7n) & 0x1ffffffffffffffn & NotAFile)
+        attackBoard |= ((pieceBoard >> 9n) & 0x7fffffffffffffn & NotHFile)
     }
     else {
         attackBoard |= ((pieceBoard << 7n) & NotHFile)

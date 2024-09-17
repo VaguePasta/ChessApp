@@ -8,15 +8,15 @@ export function ClearBit(bitboard: bigint, index: bigint): bigint {
     return bitboard & ~(1n << index)
 }
 export function CountSetBit(bitboard: bigint): bigint {
-    bitboard = bitboard - ((bitboard >> 1n) & ((1n << (64n - 1n)) - 1n) & 0x5555555555555555n);
-    bitboard = (bitboard & 0x3333333333333333n) + ((bitboard >> 2n) & ((1n << (64n - 2n)) - 1n) & 0x3333333333333333n);
-    return ((((bitboard + ((bitboard >> 4n) & ((1n << (64n - 4n)) - 1n))) & 0xF0F0F0F0F0F0F0Fn) * 0x101010101010101n) >> 56n) & ((1n << (64n - 56n)) - 1n);
+    bitboard = bitboard - ((bitboard >> 1n) & 0x5555555555555555n);
+    bitboard = (bitboard & 0x3333333333333333n) + ((bitboard >> 2n) & 0x3333333333333333n);
+    return ((((bitboard + ((bitboard >> 4n) & 0xfffffffffffffffn)) & 0xF0F0F0F0F0F0F0Fn) * 0x101010101010101n) >> 56n) & 0xffn;
 }
 export function LeastSignificantOneIndex(bitboard: bigint) {
     return CountSetBit((bitboard & -bitboard) - 1n)
 }
 export function RightShift(bitboard: bigint, index: bigint) {
-    return (bitboard >> index) & ((1n <<  (64n - index)) - 1n)
+    return (bitboard >> index) & ((1n << (64n - index)) - 1n)
 }
 export function PrintBoard(bitboard: bigint) {
     let board: string = ""

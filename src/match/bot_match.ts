@@ -29,13 +29,12 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
     })
     opponent.on('spawn', () => {
         opponent.stdin.write("uci\n")
-        opponent.stdin.write("setoption name UCI_LimitStrength value true\n")
         opponent.stdin.write("setoption name UCI_Elo value " + elo + "\n")
         opponent.stdin.write("setoption name Personality value " + personality + "\n")
         opponent.stdin.write("position startpos\n")
     })
     connection.send("ok")
-    connection.send(FENStart)
+    connection.send(btoa(FENStart + match.Players[0].Side))
     connection.removeAllListeners()
     connection.on('alive', (ws: CustomWebSocket) => {
         ws.isAlive = true
@@ -54,7 +53,7 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
         if (data.toString() === "ok") {
             evaluator.stdout.on('data', (data: any) => {
                 let evaluation = data.toString()
-                if (evaluation.includes("info depth 9")) {
+                if (evaluation.includes("info depth 13")) {
                     connection.emit('eval', ExtractWDL(evaluation))
                 }
             })
@@ -68,16 +67,20 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
                 }
                 else if (responseFromEngine) {
                     responseFromEngine += response
-                    connection.emit('response', ExtractMove(responseFromEngine))
-                    responseFromEngine = ""
+                    if (responseFromEngine.length >= 13) {
+                        connection.emit('response', ExtractMove(responseFromEngine))
+                        responseFromEngine = ""
+                    }
                 }
             })
             let game = match.Game
             if (!match.Players[0].Side) {
+                evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
             }
             else {
+                evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 GetFirstMove(opponent)
             }
@@ -107,10 +110,10 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
     })
 }
 function GetFirstMove(opponent: ChildProcessWithoutNullStreams) {
-    opponent.stdin.write("go depth 9\n")
+    opponent.stdin.write("go depth 2\n")
 }
 function SendResponse(connection: any, legalMoveList: Uint16Array | number) {
-        connection.send(legalMoveList)
+    connection.send(legalMoveList)
 }
 function SendEvaluation(connection: any, evaluations: number[]) {
     let evals = new Uint16Array(4)
@@ -120,11 +123,11 @@ function SendEvaluation(connection: any, evaluations: number[]) {
 }
 function GetResponse(opponent: ChildProcessWithoutNullStreams, positions: {position: string}) {
     opponent.stdin.write(positions.position + "\n")
-    opponent.stdin.write("go depth 9\n")
+    opponent.stdin.write("go depth 2\n")
 }
 function GetEvaluation(evaluator: ChildProcessWithoutNullStreams, positions: {position: string}) {
     evaluator.stdin.write(positions.position + "\n")
-    evaluator.stdin.write("go depth 9\n")
+    evaluator.stdin.write("go depth 13\n")
 }
 function ProcessMove(move: number, game: Game, positions: {position: string}, connection: any): number {
     switch (PlayMove(move, game)) {

@@ -94,7 +94,7 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
             game.PastPositions.unshift(ZobristHash)
             break
         case MoveFlags.queen_castle:
-            game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K] = (game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K] >> 2n) & ((1n << (64n - 2n)) - 1n)
+            game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K] = (game.PieceBitboards[game.SideToMove ? Pieces.k : Pieces.K] >> 2n) & 0x3fffffffffffffffn
             if (!game.SideToMove) {
                 game.PieceBitboards[Pieces.R] = game.PieceBitboards[Pieces.R] & ~(1n << 56n)
                 game.PieceBitboards[Pieces.R] = game.PieceBitboards[Pieces.R] | (1n << (59n))

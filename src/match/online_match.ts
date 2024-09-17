@@ -6,8 +6,8 @@ import {Match, Matches, PlayMove} from "./match";
 
 export function StartOnlineMatch(match: Match | undefined) {
     if (!match) return
-    match.Players[0].Connection.send(FENStart + match.Players[0].Side)
-    match.Players[1].Connection.send(FENStart + match.Players[1].Side)
+    match.Players[0].Connection.send(btoa(FENStart + match.Players[0].Side))
+    match.Players[1].Connection.send(btoa(FENStart + match.Players[1].Side))
     match.Players.forEach((value, index) => {
         value.Connection.on('message', (data: any) => {
             if (data.toString() === "ok") {
