@@ -6,9 +6,9 @@ export function CompressMatch(value: bigint) {
         bytes.unshift(Number(value & 0xffn));
         value >>= 8n;
     }
-    return LZString.compress(btoa(String.fromCharCode.apply(null, bytes)))
+    return LZString.compressToUTF16(btoa(String.fromCharCode.apply(null, bytes)))
 }
 
 export function DecompressMatch(compressed: string): string {
-    return LZString.decompress(compressed)
+    return LZString.decompressFromUTF16(compressed)
 }

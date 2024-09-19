@@ -72,16 +72,16 @@ function Register(username, password) {
 
 <template>
   <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center">
-    <div class="login-board display: flex; align-items: center; justify-content: center">
+    <div class="login-board" style="display: flex; align-items: center;">
       <div v-if="!register" class="prompt">
         Sign in to your account.
         <input @keydown="loginFail = false" v-model.trim="user_name" style="margin-top: 15%" placeholder="Username" class="input"/>
         <input @keydown="loginFail = false" @keydown.enter="SignIn(user_name, password, rememberMe)" v-model="password" type="password" placeholder="Password" class="input"/>
-        <div style="font-size: 0.6em">Don't have an account? <span @click="register = !register; loginFail = false" style="color: #1d90f5; cursor: pointer">Register</span>
+        <div style="font-size: 1rem">Don't have an account? <span @click="register = !register; loginFail = false" style="color: #1d90f5; cursor: pointer">Register</span>
         </div>
         <div>
           <input v-model="rememberMe" style="transform: scale(1.5) translate(-5%); margin-right: 0.5vw" type="checkbox" id="remember" name="remember"/>
-          <label style="font-size: 0.5em" for="remember">Remember me.</label>
+          <label style="font-size: 0.9rem" for="remember">Remember me.</label>
         </div>
         <div v-if="loginFail" style="font-size: 0.6em; color: orangered; margin-top: 5%">Wrong username or password.</div>
         <button @click="SignIn(user_name, password, rememberMe)" class="confirm-button">Sign in</button>
@@ -91,7 +91,7 @@ function Register(username, password) {
         <input @keydown="registerFail = 0" v-model.trim="user_name_reg" style="margin-top: 15%" placeholder="Username" class="input"/>
         <input @keydown="registerFail = 0" v-model="password_reg_1" type="password" placeholder="Enter password" class="input"/>
         <input @keydown="registerFail = 0" @keydown.enter="CheckRegister(user_name_reg, password_reg_1, password_reg_2)" v-model="password_reg_2" type="password" placeholder="Re-enter password" class="input"/>
-        <div style="font-size: 0.6em">Already a member? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Sign in</span>
+        <div style="font-size: 1rem">Already a member? <span @click="register = !register" style="color: #1d90f5; cursor: pointer">Sign in</span>
         </div>
         <div v-if="registerFail === 1" style="font-size: 0.6em; color: orangered; margin-top: 5%">Passwords do not match.</div>
         <div v-if="registerFail === -1" style="font-size: 0.6em; color: orangered; margin-top: 5%">Username taken.</div>
@@ -112,21 +112,21 @@ function Register(username, password) {
   src:url("@/assets/fonts/Gilroy-Medium.ttf");
 }
 .confirm-button {
-  width: 40%;
+  width: 50%;
   aspect-ratio: 3/1;
   border-radius: 20px;
   background-color: #555b69;
   border: none;
   color: white;
   font-family: gilroy-bold, sans-serif;
-  font-size: 0.65em;
+  font-size: 17px;
   margin-top: 7%;
 }
 .confirm-button:hover {
   background-color: #1d90f5;
 }
 .login-board {
-  width: 60%;
+  width: 55%;
   aspect-ratio: 16/9;
   background-image: linear-gradient(to left, transparent, #272a37 75%), url("@/assets/images/log_background.jpg");
   background-size: 100%;
@@ -136,29 +136,29 @@ function Register(username, password) {
   box-shadow: rgba(0, 0, 0, 0.2) 0 12px 28px 0, rgba(0, 0, 0, 0.1) 0 2px 4px 0, rgba(255, 255, 255, 0.05) 0 0 0 1px inset;
 }
 .prompt {
-  height: 100%;
-  aspect-ratio: 1/1.6;
+  height: fit-content;
   color: white;
   font-family: gilroy-bold, sans-serif;
-  font-size: 3.5vh;
+  font-size: 23px;
   display: flex;
   align-items: center;
   flex-direction: column;
   justify-content: center;
   margin-left: 5%;
+  min-width: 30%;
 }
 .input {
-  width: 100%;
+  width: 110%;
   aspect-ratio: 6/1;
   background-color: #323644;
   color: white;
   box-sizing: border-box;
   border-radius: 17px;
   border-style: none;
-  font-size: 0.7em;
+  font-size: 17px;
   font-family: gilroy-medium, sans-serif;
   margin-bottom: 10%;
-  padding: 5%;
+  padding: 10%;
 }
 .input:focus {
   outline: 1px solid #1d90f5;

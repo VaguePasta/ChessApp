@@ -124,7 +124,6 @@ export function GenerateMoves(game: GameState): MoveList {
         case Side.white:
         for (let piece = 0; piece <= 5; piece++) {
             pieceBoard = game.PieceBitboards[piece]
-            // if (pieceBoard)
             switch (piece) {
                 case Pieces.K:
                     GenerateKingMoves(pieceBoard, game.OccupancyBoards[Side.white], game.OccupancyBoards[Side.black], PseudoLegalMoveList)
@@ -153,7 +152,6 @@ export function GenerateMoves(game: GameState): MoveList {
         case Side.black:
             for (let piece = 6; piece <= 11; piece++) {
                 pieceBoard = game.PieceBitboards[piece]
-                // if (pieceBoard)
                 switch(piece) {
                     case Pieces.p:
                         GeneratePawnPushes(pieceBoard, ~game.OccupancyBoards[Side.both], Side.black, PseudoLegalMoveList)

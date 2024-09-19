@@ -5,6 +5,9 @@ import http = require('http')
 import {ProcessUpgrades} from "./connection/websocket";
 import {Active_sessions, AutoLogin, LogOut, ManualLogin, Register} from "./auth/account";
 import cookie_parser from 'cookie-parser';
+import {DatabaseConn} from "./database/init";
+import {DecompressMatch} from "./match/save";
+import LZString from "lz-string";
 app.use([
     express.text({
         type: "text/plain",

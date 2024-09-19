@@ -18,8 +18,7 @@ export function StartOnlineMatch(match: Match | undefined) {
                 }
                 value.Connection.on('message', async (data: any) => {
                     if (game.GameState.SideToMove === value.Side) {
-                        match.Moves += BigInt(parseInt(data)) << BigInt(16 * match.MoveCount)
-                        match.MoveCount++
+                        match.Moves += (BigInt(parseInt(data)) << BigInt(16 * match.MoveCount++))
                         switch (PlayMove(parseInt(data), match.Game)) {
                             case 0:
                                 let moves = new Uint16Array(game.LegalMoveList.count + 1)

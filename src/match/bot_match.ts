@@ -7,6 +7,8 @@ import {GenerateMoves} from "../game/moves/movegen";
 import {ChildProcessWithoutNullStreams, spawn} from "node:child_process";
 import {GenMoveString, MakeMove, MoveFlags, MoveList} from "../game/moves/move";
 import {AlgebraicToIndex} from "../game/bitboard/conversions";
+import {CompressMatch} from "./save";
+import {DatabaseConn} from "../database/init";
 export function NewBotMatch(ws: any, sessionID: string, side: string, elo: number, personality: string): boolean {
     let user = Active_sessions.get(sessionID)
     if (!user) return false
@@ -15,6 +17,19 @@ export function NewBotMatch(ws: any, sessionID: string, side: string, elo: numbe
     StartBotMatch(Matches.get(token), personality, elo)
     return true
 }
+
+function ChooseDepth(elo: number): number {
+    if (elo < 900) return 1
+    else if (elo < 1000) return 2
+    else if (elo < 1300) return 3
+    else if (elo < 1600) return 4
+    else if (elo < 1900) return 5
+    else if (elo < 2200) return 6
+    else if (elo < 2400) return 7
+    else if (elo < 2600) return 8
+    else return 9
+}
+
 export function StartBotMatch(match: Match | undefined, personality: string, elo: number) {
     if (!match) return
     let connection = match.Players[0].Connection
@@ -22,6 +37,7 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
     const evaluator = spawn(process.env.STOCKFISH_DIRECTORY.toString(), {shell: false, windowsHide: true})
     // @ts-ignore
     const opponent = spawn(process.env.RODENT_DIRECTORY.toString(), {shell: false, windowsHide: true})
+    const depth = ChooseDepth(elo)
     evaluator.on('spawn', () => {
         evaluator.stdin.write("setoption name UCI_ShowWDL value true\n")
         evaluator.stdin.write("uci\n")
@@ -55,19 +71,19 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
                 let evaluation = data.toString()
                 if (evaluation.includes("info depth 13")) {
                     connection.emit('eval', ExtractWDL(evaluation))
+                    console.log(ExtractMove(evaluation))
                 }
             })
             opponent.stdout.on('data', (data: any) => {
                 let response = data.toString()
-                if (response.includes("bestmove")) {
-                    if (response.length >= 13) {
-                        connection.emit('response', ExtractMove(response))
-                    }
-                    else responseFromEngine += response
+                if (response.includes("bestmove") && response.length >= 13) {
+                    connection.emit('response', ExtractMove(response))
+                    responseFromEngine = ""
                 }
-                else if (responseFromEngine) {
+                else {
                     responseFromEngine += response
-                    if (responseFromEngine.length >= 13) {
+                    let bestmoveindex = responseFromEngine.lastIndexOf("bestmove")
+                    if (bestmoveindex !== -1 && responseFromEngine.length - bestmoveindex >= 13) {
                         connection.emit('response', ExtractMove(responseFromEngine))
                         responseFromEngine = ""
                     }
@@ -82,19 +98,19 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
             else {
                 evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
-                GetFirstMove(opponent)
+                GetFirstMove(opponent, depth)
             }
             connection.on('message', (data: any) => {
                 if (game.GameState.SideToMove === match.Players[0].Side) {
-                    if (ProcessMove(parseInt(data), game, positions, connection)) {
+                    if (ProcessMove(parseInt(data), game, positions, connection, match)) {
                         GetEvaluation(evaluator, positions)
-                        GetResponse(opponent, positions)
+                        GetResponse(opponent, depth, positions)
                     }
                 }
             })
             connection.on('response', (algebraic: string) => {
                 let move = AlgebraicToMove(algebraic, game.LegalMoveList)
-                let legalMoves = ProcessBotMove(move, game, connection)
+                let legalMoves = ProcessBotMove(move, game, connection, match)
                 if (legalMoves) {
                     positions.position += algebraic + " "
                     setTimeout(() => {
@@ -109,8 +125,8 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
         }
     })
 }
-function GetFirstMove(opponent: ChildProcessWithoutNullStreams) {
-    opponent.stdin.write("go depth 2\n")
+function GetFirstMove(opponent: ChildProcessWithoutNullStreams, depth: number) {
+    opponent.stdin.write("go depth " + depth + "\n")
 }
 function SendResponse(connection: any, legalMoveList: Uint16Array | number) {
     connection.send(legalMoveList)
@@ -121,43 +137,50 @@ function SendEvaluation(connection: any, evaluations: number[]) {
     evals[0] = 0
     connection.send(evals)
 }
-function GetResponse(opponent: ChildProcessWithoutNullStreams, positions: {position: string}) {
+function GetResponse(opponent: ChildProcessWithoutNullStreams, depth: number, positions: {position: string}) {
     opponent.stdin.write(positions.position + "\n")
-    opponent.stdin.write("go depth 2\n")
+    opponent.stdin.write("go depth " + depth + "\n")
 }
 function GetEvaluation(evaluator: ChildProcessWithoutNullStreams, positions: {position: string}) {
     evaluator.stdin.write(positions.position + "\n")
     evaluator.stdin.write("go depth 13\n")
 }
-function ProcessMove(move: number, game: Game, positions: {position: string}, connection: any): number {
+function ProcessMove(move: number, game: Game, positions: {position: string}, connection: any, match: Match): number {
+    match.Moves += BigInt(move) << BigInt(16 * match.MoveCount++)
     switch (PlayMove(move, game)) {
         case 0:
             positions.position += GenMoveString(move) + " "
             return 1
         case 1:
+            SaveGame(match)
             connection.send("You won.")
             connection.close()
             return 0
         case 2:
+            SaveGame(match)
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
+            SaveGame(match)
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
+            SaveGame(match)
             connection.send("Draw by threefold repetition.")
             connection.close()
             return 0
         case 5:
+            SaveGame(match)
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
     }
 }
-function ProcessBotMove(move: number, game: Game, connection: any) {
+function ProcessBotMove(move: number, game: Game, connection: any, match: Match) {
     let legalMoves
+    match.Moves += (BigInt(move) << BigInt(16 * match.MoveCount++))
     switch (PlayMove(move, game)) {
         case 0:
             game.LegalMoveList = GenerateMoves(game.GameState)
@@ -166,31 +189,43 @@ function ProcessBotMove(move: number, game: Game, connection: any) {
             legalMoves[0] = move
             return legalMoves
         case 1:
+            SaveGame(match)
             connection.send(new Uint16Array([move]))
             connection.send("You lost.")
             connection.close()
             return 0
         case 2:
+            SaveGame(match)
             connection.send(new Uint16Array([move]))
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
+            SaveGame(match)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
+            SaveGame(match)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by threefold repetition.")
             connection.close()
+
             return 0
         case 5:
+            SaveGame(match)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
     }
+}
+async function SaveGame(match: Match) {
+    if (!match.Players[0].Side)
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (${match.Players[0].Userid}, null, ${CompressMatch(match.Moves)}, localtimestamp(0))`
+    else
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (null, ${match.Players[0].Userid}, ${CompressMatch(match.Moves)}, localtimestamp(0))`
 }
 function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
     let source = AlgebraicToIndex(algebraic.slice(0, 2))

@@ -1,3 +1,4 @@
+export const FENStart = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 export function ParseFEN(FEN) {
     let pieces = new Map();
     let counter = 0

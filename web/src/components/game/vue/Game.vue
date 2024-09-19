@@ -80,16 +80,16 @@ import {onBeforeMount, ref} from "vue";
 
 <template>
   <div style="position: absolute; width:80%; height: 90vh; left: 50%; top: 50%; transform: translate(-50%, -50%)">
-    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="information.slice(-1)"/>
-    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
+    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="parseInt(information.slice(-1))"/>
+    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves" :replaying="false"/>
     <div v-if="result" class="end-popup">
-      <div style="font-size: 3.5vh; padding-bottom: 1vh;">The game has concluded.</div>
+      <div style="font-size: 3.2vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
       <button @click="returnToMenu" class="end-button">Back to main menu</button>
     </div>
     <div v-if="result" class="modal-mask"/>
     <div v-if="connectionLost" class="end-popup">
-      <div style="font-size: 3.5vh; padding-bottom: 1vh;">{{connectionLost}}</div>
+      <div style="font-size: 3.2vh; padding-bottom: 1vh;">{{connectionLost}}</div>
       <button @click="returnToMenu" class="end-button">Back to main menu.</button>
     </div>
   </div>
@@ -100,12 +100,8 @@ import {onBeforeMount, ref} from "vue";
   background-color: #81b64c;
   border: none;
   padding: 1vh;
-  font-family: "Open Sans", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 300;
-  font-style: normal;
-  font-variation-settings: "wdth" 100;
-  font-size: 2vh;
+  font-family: gilroy-regular, sans-serif;
+  font-size: 2.5vh;
   border-radius: 5px;
 }
 .end-button:hover {
@@ -129,12 +125,9 @@ import {onBeforeMount, ref} from "vue";
   padding: 15px;
   box-sizing: border-box;
   border: 1px solid black;
-  font-family: "Open Sans", sans-serif;
-  font-optical-sizing: auto;
-  font-weight: 300;
-  font-style: normal;
-  font-variation-settings: "wdth" 100;
+  font-family: gilroy-regular, sans-serif;
   animation: zoom-in 0.2s;
+  font-size: 17px;
 }
 @keyframes zoom-in {
   from {

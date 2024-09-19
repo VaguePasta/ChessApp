@@ -16,7 +16,7 @@ const sounds = ref([
 ])
 const pendingMove = ref(0)
 const promoting = ref(false)
-const props = defineProps(['side', 'pos', 'legalMoves', 'sideToMove'])
+const props = defineProps(['side', 'pos', 'legalMoves', 'sideToMove', 'replaying'])
 const selectingPiece = ref(0)
 const movableSquare = ref([])
 const lastMoves = ref([])
@@ -30,7 +30,7 @@ function MoveIsLegal(move) {
     if (props.legalMoves.moves !== null) {
       let sourceSquare = GetSourceSquare(move)
       let targetSquare = GetTargetSquare(move)
-      for (let i = 0; i < props.legalMoves.moves.length; i++) {
+      for (let i = 1; i < props.legalMoves.moves.length; i++) {
         if (sourceSquare === GetSourceSquare(props.legalMoves.moves[i]) && targetSquare === GetTargetSquare(props.legalMoves.moves[i])) {
           return props.legalMoves.moves[i]
         }
@@ -44,7 +44,7 @@ function SelectingPiece(event, pieceNumber) {
   if (selectingPiece.value === 0) {
     selectingPiece.value = pieceNumber
     pieces.value.get(pieceNumber).Selected = true
-    for (let i = 0; i < props.legalMoves.moves.length; i++) {
+    for (let i = 1; i < props.legalMoves.moves.length; i++) {
       if (GetSourceSquare(props.legalMoves.moves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
         movableSquare.value.push(props.legalMoves.moves[i])
       }
@@ -65,7 +65,7 @@ function SelectingPiece(event, pieceNumber) {
       movableSquare.value.length = 0
       selectingPiece.value = 0
       pieces.value.get(pieceNumber).Selected = true
-      for (let i = 0; i < props.legalMoves.moves.length; i++) {
+      for (let i = 1; i < props.legalMoves.moves.length; i++) {
         if (GetSourceSquare(props.legalMoves.moves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
           movableSquare.value.push(props.legalMoves.moves[i])
         }
@@ -172,12 +172,12 @@ function SendMove(move, check) {
     websocket.send(send_move)
   }
 }
+
 watch(props.legalMoves, () => {
-  if (props.sideToMove !== props.side) {
+  if (props.replaying || (props.sideToMove !== props.side)) {
     Move(props.legalMoves.moves[0], false)
-    props.legalMoves.moves = props.legalMoves.moves.slice(1)
   }
-}, {deep: true})
+})
 const emit = defineEmits(['change-side'])
 function ProcessMove(move, pieceKey) {
   let targetSquare = GetTargetSquare(move)
@@ -343,7 +343,7 @@ function KnightPromote() {
         <LegalSquare v-for="move in movableSquare" :side="props.side" :move="move" :key="move"/>
       </div>
 
-      <div v-if="promoting" class="modal-mask"/>
+      <div v-if="promoting || props.replaying" class="modal-mask"/>
     </div>
   </div>
 </template>
