@@ -1,8 +1,8 @@
 <script setup>
-import {ref} from "vue";
-  const props = defineProps(['side', 'position'])
-  const left = ref(props.side === 0 ? (props.position % 8) * 12.5 + '%' : 87.5 - (props.position % 8) * 12.5 + '%')
-  const top = ref(props.side === 0 ? Math.floor(props.position / 8) * 12.5 + '%' : 87.5 - Math.floor(props.position / 8) * 12.5 + '%')
+import {ref, watch} from "vue";
+const props = defineProps(['side', 'position'])
+const left = ref(!props.side ? (props.position % 8) * 12.5 + '%' : 87.5 - (props.position % 8) * 12.5 + '%')
+const top = ref(!props.side ? Math.floor(props.position / 8) * 12.5 + '%' : 87.5 - Math.floor(props.position / 8) * 12.5 + '%')
 </script>
 
 <template>

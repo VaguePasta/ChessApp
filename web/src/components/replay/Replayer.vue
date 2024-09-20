@@ -19,7 +19,7 @@ function Base64ToUint16(base64) {
   return uint16
 }
 const current_move = ref({moves: []})
-const move_array = Base64ToUint16(props.record)
+const move_array = Base64ToUint16("BTxHZReOCW4PFAKlBQsLdUL7QsgC2wIgvvMLtw/7SCJO/A3+DwRIoUNGQ18DVAh5CBgL9wULB+0Fzw5pAQIKYRYICHkM6wtkF00OeACDCS0K4wl6SNoOqAiYCOsESQo6AMAO/UbcSrFKowtfBwQK8wEFCrkI1QfcBV5HNEeMRuJG1QiqQsNC2SGEL7wDBQ07AsIGYgYSRuQWywetBUYIvQSBC34XDAqyFooZNA==")
 const current_move_index = ref(0)
 function NextMove() {
   if (current_move_index.value < move_array.length) {
@@ -30,11 +30,16 @@ const sideToMove = ref(0);
 function ChangeSide() {
   sideToMove.value = 1 - sideToMove.value;
 }
+function FlipWatch() {
+  sideToView.value = 1 - sideToView.value
+}
+const sideToView = ref(0)
 </script>
 
 <template>
-<Board @change-side="ChangeSide" :side="0" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
+<Board @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
   <button @click="NextMove">Next move</button>
+  <button @click="FlipWatch">Flip side</button>
 </template>
 
 <style scoped>

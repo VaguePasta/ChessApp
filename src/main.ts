@@ -7,7 +7,8 @@ import {Active_sessions, AutoLogin, LogOut, ManualLogin, Register} from "./auth/
 import cookie_parser from 'cookie-parser';
 import {DatabaseConn} from "./database/init";
 import {DecompressMatch} from "./match/save";
-import LZString from "lz-string";
+import {Benchmark} from "./game/engine/benchmarking";
+import {FENStart} from "./game/engine/game";
 app.use([
     express.text({
         type: "text/plain",
@@ -70,7 +71,7 @@ app.post('/logout', (req, res) => {
         res.end()
     })
 })
-server.listen(8080, () => {
+server.listen(8080, async () => {
     StartChessEngine()
     console.log('Server started. Listening on 8080.')
 })

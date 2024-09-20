@@ -71,26 +71,25 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
                 let evaluation = data.toString()
                 if (evaluation.includes("info depth 13")) {
                     connection.emit('eval', ExtractWDL(evaluation))
-                    console.log(ExtractMove(evaluation))
                 }
             })
             opponent.stdout.on('data', (data: any) => {
                 let response = data.toString()
-                if (response.includes("bestmove") && response.length >= 13) {
-                    connection.emit('response', ExtractMove(response))
+                if (response.includes("bestmove") && response.length >= 14) {
+                    connection.emit('response', ExtractMove(response.trim()))
                     responseFromEngine = ""
                 }
                 else {
                     responseFromEngine += response
                     let bestmoveindex = responseFromEngine.lastIndexOf("bestmove")
-                    if (bestmoveindex !== -1 && responseFromEngine.length - bestmoveindex >= 13) {
+                    if (bestmoveindex !== -1 && responseFromEngine.length - bestmoveindex >= 14) {
                         connection.emit('response', ExtractMove(responseFromEngine))
                         responseFromEngine = ""
                     }
                 }
             })
             let game = match.Game
-            if (!match.Players[0].Side) {
+            if (match.Players[0].Side === game.GameState.SideToMove) {
                 evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
@@ -255,7 +254,7 @@ function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
 }
 export function ExtractMove(response: string): string {
     let bestMoveIndex = response.lastIndexOf("bestmove")
-    return response.slice(bestMoveIndex + 9, bestMoveIndex + 13)
+    return response.slice(bestMoveIndex + 9, bestMoveIndex + 14)
 }
 function ExtractWDL(response: string): number[] {
     let wdl_index = response.indexOf("wdl", 45)

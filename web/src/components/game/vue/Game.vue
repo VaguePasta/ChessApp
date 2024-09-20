@@ -22,9 +22,9 @@ import {onBeforeMount, ref} from "vue";
     if (!websocket) router.push("/dashboard")
     else {
       websocket.addEventListener('close', lostConnection)
-      if (information[information.length - 1] === "0") {
+      if (parseInt(information[information.length - 1]) === sideToMove.value) {
         websocket.onmessage = (msg) => {
-          legalMoves.value.moves = new Uint16Array(msg.data)
+          legalMoves.value.moves = new Uint16Array([0, ...new Uint16Array(msg.data)])
           defineOnMessage()
         }
       } else {

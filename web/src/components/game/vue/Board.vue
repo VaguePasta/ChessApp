@@ -326,7 +326,7 @@ function KnightPromote() {
     <div class="board" @click="PlayerMove">
       <CoordinatesY style="left: 0.25vh;" :side="props.side"/>
       <CoordinatesX style="bottom: 0.25vh; left: 10.5%" :side="props.side"/>
-      <Highlights v-for="square in lastMoves" :side="props.side" :position="square" :key="square"/>
+      <Highlights v-for="square in lastMoves" :side="props.side" :position="square" :key="square + side"/>
       <Piece @selecting-piece="SelectingPiece" v-for="piece in pieces" :side="props.side" :sideToMove="props.sideToMove" :information="piece[1]" :key="piece[0]"/>
       <div v-if="promoting" class="promotion-popup">
         <button v-if="props.side" @click="QueenPromote" class="promotion-button black-queen"/>

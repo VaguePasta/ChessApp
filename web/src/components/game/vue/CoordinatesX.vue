@@ -28,5 +28,6 @@
   font-style: normal;
   font-variation-settings: "wdth" 100;
   color: black;
+  user-select: none;
 }
 </style>
