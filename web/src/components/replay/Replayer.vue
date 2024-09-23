@@ -1,5 +1,5 @@
 <script setup>
-import {ref} from "vue";
+import {onBeforeUnmount, ref} from "vue";
 import Board from "@/components/game/vue/Board.vue";
 import {FENStart} from "@/components/game/js/FEN.js";
 
@@ -34,11 +34,30 @@ function FlipWatch() {
   sideToView.value = 1 - sideToView.value
 }
 const sideToView = ref(0)
+const board_ref = ref(null)
+function PreviousMove() {
+  if (current_move_index.value > 0)
+    board_ref.value.UnmakeMove(move_array[--current_move_index.value], move_array[current_move_index.value - 1])
+}
+function Advance(event) {
+  if (event.key === "ArrowRight") NextMove()
+  else if (event.key === "ArrowLeft") PreviousMove()
+  else if (event.key === "Tab") {
+    FlipWatch()
+    event.stopPropagation()
+    event.preventDefault()
+  }
+}
+document.addEventListener("keydown", Advance)
+onBeforeUnmount(() => {
+  document.removeEventListener("keydown", Advance)
+})
 </script>
 
 <template>
-<Board @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
-  <button @click="NextMove">Next move</button>
+  <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
+  <button @click="NextMove">Advance</button>
+  <button @click="PreviousMove">Reverse</button>
   <button @click="FlipWatch">Flip side</button>
 </template>
 

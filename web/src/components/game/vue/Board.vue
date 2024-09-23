@@ -172,7 +172,6 @@ function SendMove(move, check) {
     websocket.send(send_move)
   }
 }
-
 watch(props.legalMoves, () => {
   if (props.replaying || (props.sideToMove !== props.side)) {
     Move(props.legalMoves.moves[0], false)
@@ -183,13 +182,17 @@ function ProcessMove(move, pieceKey) {
   let targetSquare = GetTargetSquare(move)
   let flag = GetMoveFlag(move)
   if (flag === 4) { //Capture
+    PieceCapture(targetSquare)
     RemovePiece(targetSquare)
     sounds.value[1].play()
   }
   else if (flag === 5) { //En passant.
     if (props.sideToMove === 0) {
+      PieceCapture(targetSquare + 8)
       RemovePiece(targetSquare + 8)
     } else {
+      PieceCapture(targetSquare - 8)
+      CapturedPieces.value.push(pieces.value.get(FindPiece(targetSquare - 8)))
       RemovePiece(targetSquare - 8)
     }
     sounds.value[1].play()
@@ -219,7 +222,7 @@ function ProcessMove(move, pieceKey) {
     sounds.value[2].play()
   }
   else if (flag === 11 || flag === 15) {
-    RemovePiece(targetSquare)
+    PieceCapture(targetSquare)
     RemovePiece(targetSquare)
     if (props.sideToMove === 0) {
       ChangePiece(0, 4, pieceKey)
@@ -229,6 +232,7 @@ function ProcessMove(move, pieceKey) {
     sounds.value[3].play()
   }
   else if (flag === 10 || flag === 14) {
+    PieceCapture(targetSquare)
     RemovePiece(targetSquare)
     if (props.sideToMove === 0) {
       ChangePiece(0, 3, pieceKey)
@@ -238,6 +242,7 @@ function ProcessMove(move, pieceKey) {
     sounds.value[3].play()
   }
   else if (flag === 9 || flag === 13) {
+    PieceCapture(targetSquare)
     RemovePiece(targetSquare)
     if (props.sideToMove === 0) {
       ChangePiece(0, 2, pieceKey)
@@ -247,6 +252,7 @@ function ProcessMove(move, pieceKey) {
     sounds.value[3].play()
   }
   else if (flag === 8 || flag === 12) {
+    PieceCapture(targetSquare)
     RemovePiece(targetSquare)
     if (props.sideToMove === 0) {
       ChangePiece(0, 1, pieceKey)
@@ -319,6 +325,57 @@ function KnightPromote() {
   selectingPiece.value = 0
   movableSquare.value.length = 0
 }
+const CapturedPieces = ref([])
+function UnmakeMove(move, previousMove) {
+  let sourceSquare = GetSourceSquare(move);
+  let targetSquare = GetTargetSquare(move);
+  let movedPiece = FindPiece(targetSquare)
+  pieces.value.get(movedPiece).Selected = true
+  switch (GetMoveFlag(move)) {
+    case 4: case 5:
+      RecoverCapturedPiece()
+      break;
+    case 12: case 13: case 14: case 15:
+      RecoverCapturedPiece()
+      pieces.value.get(movedPiece).Piece[1] = (pieces.value.get(movedPiece).Piece[1] > 8) ? 8 : 0
+      break;
+    case 8: case 9: case 10: case 11:
+      pieces.value.get(movedPiece).Piece[1] = (pieces.value.get(movedPiece).Piece[1] > 8) ? 8 : 0
+      break;
+    case 2:
+      let k_rook = pieces.value.get(FindPiece(targetSquare - 1))
+      k_rook.Selected = true
+      k_rook.Piece[2] = targetSquare + 1
+      k_rook.Selected = false
+      break;
+    case 3:
+      let q_rook = pieces.value.get(FindPiece(targetSquare + 1))
+      q_rook.Selected = true
+      q_rook.Piece[2] = targetSquare - 2
+      q_rook.Selected = false
+      break;
+  }
+  pieces.value.get(movedPiece).Piece[2] = sourceSquare
+  pieces.value.get(movedPiece).Selected = false
+  emit('change-side')
+  if (previousMove) {
+    lastMoves.value[0] = GetSourceSquare(previousMove)
+    lastMoves.value[1] = GetTargetSquare(previousMove)
+  }
+  else lastMoves.value = []
+}
+function RecoverCapturedPiece() {
+  let capturedPiece = CapturedPieces.value.pop()
+  pieces.value.set(capturedPiece.Piece[0], capturedPiece)
+}
+function PieceCapture(square) {
+  let piece = FindPiece(square)
+  if (piece !== -1)
+    CapturedPieces.value.push(pieces.value.get(piece))
+}
+defineExpose({
+  UnmakeMove
+})
 </script>
 
 <template>
