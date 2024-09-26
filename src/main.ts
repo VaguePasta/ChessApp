@@ -5,10 +5,7 @@ import http = require('http')
 import {ProcessUpgrades} from "./connection/websocket";
 import {Active_sessions, AutoLogin, LogOut, ManualLogin, Register} from "./auth/account";
 import cookie_parser from 'cookie-parser';
-import {DatabaseConn} from "./database/init";
-import {DecompressMatch} from "./match/save";
-import {Benchmark} from "./game/engine/benchmarking";
-import {FENStart} from "./game/engine/game";
+import {GetRecord, GetRecordList} from "./match/record";
 app.use([
     express.text({
         type: "text/plain",
@@ -69,6 +66,30 @@ app.post('/logout', (req, res) => {
             res.status(200).clearCookie('verify')
         }
         res.end()
+    })
+})
+app.get('/records', (req, res) => {
+    let token = req.header('authorization')
+    if (!token) {
+        res.end(401)
+        return
+    }
+    let user = Active_sessions.get(token)
+    if (!user) {
+        res.end(401)
+        return
+    }
+    GetRecordList(user.Userid).then((result) => {
+        if (!result) res.end(404)
+        else {
+            user.LastUsed = Date.now()
+            res.end(result)
+        }
+    })
+})
+app.get('/record/:id', (req, res) => {
+    GetRecord(req.url.split("/")[2]).then((result) => {
+        res.end(result)
     })
 })
 server.listen(8080, async () => {

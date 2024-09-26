@@ -7,11 +7,12 @@ import {GenerateMoves} from "../game/moves/movegen";
 import {ChildProcessWithoutNullStreams, spawn} from "node:child_process";
 import {GenMoveString, MakeMove, MoveFlags, MoveList} from "../game/moves/move";
 import {AlgebraicToIndex} from "../game/bitboard/conversions";
-import {CompressMatch} from "./save";
+import {CompressMatch} from "./record";
 import {DatabaseConn} from "../database/init";
 export function NewBotMatch(ws: any, sessionID: string, side: string, elo: number, personality: string): boolean {
     let user = Active_sessions.get(sessionID)
     if (!user) return false
+    else user.LastUsed = Date.now()
     let token = GenerateRandomToken(8)
     if (!NewMatch(token, FENStart, {Side: parseInt(side), Connection: ws, Username: user.Username, Userid: user.Userid.toString()})) return false
     StartBotMatch(Matches.get(token), personality, elo)
@@ -151,27 +152,27 @@ function ProcessMove(move: number, game: Game, positions: {position: string}, co
             positions.position += GenMoveString(move) + " "
             return 1
         case 1:
-            SaveGame(match)
+            SaveGame(match, match.Players[0].Side ? -1 : 1)
             connection.send("You won.")
             connection.close()
             return 0
         case 2:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send("Draw by threefold repetition.")
             connection.close()
             return 0
         case 5:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
@@ -188,43 +189,44 @@ function ProcessBotMove(move: number, game: Game, connection: any, match: Match)
             legalMoves[0] = move
             return legalMoves
         case 1:
-            SaveGame(match)
+            SaveGame(match, match.Players[0].Side ? 1 : -1)
             connection.send(new Uint16Array([move]))
             connection.send("You lost.")
             connection.close()
             return 0
         case 2:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send(new Uint16Array([move]))
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by threefold repetition.")
             connection.close()
 
             return 0
         case 5:
-            SaveGame(match)
+            SaveGame(match, 0)
             connection.send(new Uint16Array([move]))
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
     }
 }
-async function SaveGame(match: Match) {
+async function SaveGame(match: Match, winSide: number) {
+    let winner = winSide ? (winSide === 1 ? 'white' : 'black') : 'draw'
     if (!match.Players[0].Side)
-        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (${match.Players[0].Userid}, null, ${CompressMatch(match.Moves)}, localtimestamp(0))`
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side) values (${match.Players[0].Userid}, null, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner})`
     else
-        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (null, ${match.Players[0].Userid}, ${CompressMatch(match.Moves)}, localtimestamp(0))`
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side) values (null, ${match.Players[0].Userid}, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner})`
 }
 function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
     let source = AlgebraicToIndex(algebraic.slice(0, 2))

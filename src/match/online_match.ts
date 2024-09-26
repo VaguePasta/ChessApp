@@ -1,6 +1,6 @@
 import {FENStart} from "../game/engine/game";
 import {GenerateMoves} from "../game/moves/movegen";
-import {CompressMatch} from "./save";
+import {CompressMatch} from "./record";
 import {DatabaseConn} from "../database/init";
 import {Match, Matches, PlayMove} from "./match";
 
@@ -8,6 +8,7 @@ export function StartOnlineMatch(match: Match | undefined) {
     if (!match) return
     match.Players[0].Connection.send(btoa(FENStart + match.Players[0].Side))
     match.Players[1].Connection.send(btoa(FENStart + match.Players[1].Side))
+    let winSide = null
     match.Players.forEach((value, index) => {
         value.Connection.on('message', (data: any) => {
             if (data.toString() === "ok") {
@@ -29,7 +30,10 @@ export function StartOnlineMatch(match: Match | undefined) {
                             case 1:
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[index].Connection.send("You won.")
+                                await DatabaseConn`update users set win = win + 1 where user_id = ${match.Players[index].Userid}`
                                 match.Players[1 - index].Connection.send("You lost.")
+                                await DatabaseConn`update users set loss = loss + 1 where user_id = ${match.Players[1-index].Userid}`
+                                winSide = match.Players[index].Side ? 'black' : 'white'
                                 match.Players[index].Connection.removeAllListeners()
                                 match.Players[1 - index].Connection.removeAllListeners()
                                 match.Players[0].Connection.close()
@@ -39,6 +43,8 @@ export function StartOnlineMatch(match: Match | undefined) {
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[0].Connection.send("Stalemate.")
                                 match.Players[1].Connection.send("Stalemate.")
+                                await DatabaseConn `update users set draw = draw + 1 where user_id = ${match.Players[index].Userid} or user_id = ${match.Players[1 - index].Userid}`
+                                winSide = 'draw'
                                 match.Players[index].Connection.removeAllListeners()
                                 match.Players[1 - index].Connection.removeAllListeners()
                                 match.Players[0].Connection.close()
@@ -48,6 +54,8 @@ export function StartOnlineMatch(match: Match | undefined) {
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[0].Connection.send("Draw by 50-move rule.")
                                 match.Players[1].Connection.send("Draw by 50-move rule.")
+                                await DatabaseConn `update users set draw = draw + 1 where user_id = ${match.Players[index].Userid} or user_id = ${match.Players[1 - index].Userid}`
+                                winSide = 'draw'
                                 match.Players[index].Connection.removeAllListeners()
                                 match.Players[1 - index].Connection.removeAllListeners()
                                 match.Players[0].Connection.close()
@@ -57,6 +65,8 @@ export function StartOnlineMatch(match: Match | undefined) {
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[0].Connection.send("Draw by threefold repetition.")
                                 match.Players[1].Connection.send("Draw by threefold repetition.")
+                                await DatabaseConn `update users set draw = draw + 1 where user_id = ${match.Players[index].Userid} or user_id = ${match.Players[1 - index].Userid}`
+                                winSide = 'draw'
                                 match.Players[index].Connection.removeAllListeners()
                                 match.Players[1 - index].Connection.removeAllListeners()
                                 match.Players[0].Connection.close()
@@ -66,6 +76,8 @@ export function StartOnlineMatch(match: Match | undefined) {
                                 match.Players[1 - index].Connection.send(new Uint16Array([parseInt(data)]).buffer)
                                 match.Players[0].Connection.send("Draw by insufficient material.")
                                 match.Players[1].Connection.send("Draw by insufficient material.")
+                                await DatabaseConn `update users set draw = draw + 1 where user_id = ${match.Players[index].Userid} or user_id = ${match.Players[1 - index].Userid}`
+                                winSide = 'draw'
                                 match.Players[index].Connection.removeAllListeners()
                                 match.Players[1 - index].Connection.removeAllListeners()
                                 match.Players[0].Connection.close()
@@ -74,7 +86,7 @@ export function StartOnlineMatch(match: Match | undefined) {
                         }
                         let white_player = !match.Players[0].Side ? match.Players[0].Userid : match.Players[1].Userid
                         let black_player = match.Players[0].Side ? match.Players[0].Userid : match.Players[1].Userid
-                        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added) values (${white_player}, ${black_player}, ${CompressMatch(match.Moves)}, localtimestamp(0))`
+                        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side) values (${white_player}, ${black_player}, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winSide})`
                     }
                 })
             }

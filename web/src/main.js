@@ -10,7 +10,7 @@ const routes = [
     { path: '/game', component: Game, props: route => ({pos: route.query.p, bot: route.query.b})},
     { path: '/dashboard', component: Dashboard},
     { path: '/', component: Login},
-    { path: '/replay', component: Replayer},
+    { path: '/replay', component: Replayer, props: route => ({id: route.query.id})},
     { path: '/:pathMatch(.*)*', redirect: "/"}
 ]
 const router = createRouter({

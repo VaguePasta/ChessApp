@@ -120,7 +120,6 @@ function HoverFindMatch(e) {
     <button @mousemove="HoverFindMatch" class="find-match" @click="FindMatch">Find match</button>
     <button @mousemove="HoverFindMatch" class="find-match" @click="choosing = true">Practice against computer</button>
   </div>
-
   <div @click="choosing=false;" v-if="choosing" class="new-mask"/>
   <ChooseBot @new-bot-match="NewBotMatch" v-if="choosing"/>
 </template>

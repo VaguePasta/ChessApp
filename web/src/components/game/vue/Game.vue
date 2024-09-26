@@ -5,6 +5,7 @@ import {onBeforeMount, ref} from "vue";
   import {useRouter} from "vue-router";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
   import Rating from "@/components/game/vue/Rating.vue";
+import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/sounds.js";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref({moves: []})
@@ -13,14 +14,17 @@ import {onBeforeMount, ref} from "vue";
   const information = atob(props.pos)
   const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
   const sounds = ref([
-    new Audio("/sounds/win.mp3"),
-    new Audio("/sounds/lose.mp3"),
-    new Audio("/sounds/draw.mp3"),
+    new Audio(),
+    new Audio(),
+    new Audio(),
   ])
   const rating = ref({rate: [333, 333, 333]})
   onBeforeMount(() => {
     if (!websocket) router.push("/dashboard")
     else {
+      sounds.value[0].src = winning_sound
+      sounds.value[1].src = losing_sound
+      sounds.value[2].src = drawing_sound
       websocket.addEventListener('close', lostConnection)
       if (parseInt(information[information.length - 1]) === sideToMove.value) {
         websocket.onmessage = (msg) => {

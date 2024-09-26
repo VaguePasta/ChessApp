@@ -1,9 +1,11 @@
+create type side as enum('white', 'draw', 'black');
 create table if not exists game_records (
 	game_id bigint primary key generated always as identity,
 	white_player bigint references users(user_id),
 	black_player bigint references users(user_id),
 	moves bytea,
-	date_added timestamp(0)
+	date_added timestamp(0),
+	win_side side
 );
 create function delete_nulled_records()
 	returns trigger
@@ -13,6 +15,7 @@ begin
 	delete from game_records where black_player = null and white_player = null;
 end;
 $$;
+
 create trigger check_delete
 after delete on users
 execute function delete_nulled_records()

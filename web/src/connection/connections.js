@@ -4,6 +4,10 @@ export let SessionID = null
 export function SetSessionID(id) {
     SessionID = id
 }
+export let Username = null
+export function SetUsername(username) {
+    Username = username
+}
 
 export async function ConnectToServer() {
     SetSessionID(null)
@@ -17,5 +21,11 @@ export async function ConnectToServer() {
             'type': 'login',
         })
     })
-    if (res.ok) SetSessionID(await res.text())
+    if (res.ok) {
+        res.text().then((text) => {
+            let infos = JSON.parse(text)
+            SetSessionID(infos[0])
+            SetUsername(infos[1])
+        })
+    }
 }

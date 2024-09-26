@@ -46,7 +46,7 @@ export async function AutoLogin(verification: string): Promise<string|null> {
         Websocket: null,
         LastUsed: Date.now(),
     })
-    return token
+    return JSON.stringify([token, row[0].username])
 }
 export async function Register(username: string, password: string): Promise<boolean> {
     let hashedPassword = await bcrypt.hash(password, saltRounds)

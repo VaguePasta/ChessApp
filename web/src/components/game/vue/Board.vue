@@ -1,6 +1,6 @@
 <script setup>
 import Piece from "./Piece.vue";
-import {onMounted, ref, watch} from "vue";
+import {onBeforeMount, onMounted, ref, watch} from "vue";
 import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "../js/Moves.js";
 import {websocket} from "@/connection/websocket.js";
 import LegalSquare from "@/components/game/vue/LegalSquare.vue";
@@ -8,12 +8,20 @@ import CoordinatesY from "@/components/game/vue/CoordinatesY.vue";
 import CoordinatesX from "@/components/game/vue/CoordinatesX.vue";
 import Highlights from "@/components/game/vue/Highlights.vue";
 import {ParseFEN} from "@/components/game/js/FEN.js";
-const sounds = ref([
-  new Audio("/sounds/move.mp3"),
-  new Audio("/sounds/capture.mp3"),
-  new Audio("/sounds/castle.mp3"),
-  new Audio("/sounds/promote.mp3"),
-])
+import {capture_sound, castling_sound, move_sound, promote_sound} from "@/components/game/js/sounds.js";
+let sounds
+onBeforeMount(() => {
+  sounds = ref([
+    new Audio(),
+    new Audio(),
+    new Audio(),
+    new Audio()
+  ])
+  sounds.value[0].src = move_sound
+  sounds.value[1].src = capture_sound
+  sounds.value[2].src = castling_sound
+  sounds.value[3].src = promote_sound
+})
 const pendingMove = ref(0)
 const promoting = ref(false)
 const props = defineProps(['side', 'pos', 'legalMoves', 'sideToMove', 'replaying'])

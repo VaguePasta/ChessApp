@@ -17,7 +17,9 @@ export interface WaitingRoom {
 }
 export const Lobby = new Map<string, WaitingRoom>()
 export function ProcessMatchmakingRequest(ws: any, sessionId: string) {
-    if (!Active_sessions.get(sessionId)) return false
+    let session = Active_sessions.get(sessionId)
+    if (!session) return false
+    else session.LastUsed = Date.now()
     if (MatchQueue.length >= 1) {
         let token = GenerateRandomToken(8)
         Lobby.set(token, {
@@ -84,7 +86,9 @@ export function ProcessMatchmakingRequest(ws: any, sessionId: string) {
     return true
 }
 export function ConnectToLobby(ws: any, token: any, sessionId: string): boolean {
-    if (!Active_sessions.get(sessionId)) return false
+    let session = Active_sessions.get(sessionId)
+    if (!session) return false
+    else session.LastUsed = Date.now()
     let lobby = Lobby.get(token)
     if (lobby === undefined) {
         ws.send("Match cancelled.")

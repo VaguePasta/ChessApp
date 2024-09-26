@@ -1,7 +1,7 @@
 <script setup>
 import {ref, onBeforeMount} from "vue";
 import {useRouter} from "vue-router";
-import {server, SessionID, SetSessionID} from "@/connection/connections.js";
+import {server, SessionID, SetSessionID, SetUsername} from "@/connection/connections.js";
 const router = useRouter()
 const loginFail = ref(false)
 const registerFail = ref(0)
@@ -29,6 +29,7 @@ function SignIn(username, password, remember) {
     if (res.ok) {
       res.text().then((data) => {
         SetSessionID(data)
+        SetUsername(username)
         router.push("/dashboard")
       })
     }
