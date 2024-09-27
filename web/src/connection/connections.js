@@ -22,10 +22,9 @@ export async function ConnectToServer() {
         })
     })
     if (res.ok) {
-        res.text().then((text) => {
-            let infos = JSON.parse(text)
-            SetSessionID(infos[0])
-            SetUsername(infos[1])
-        })
+        let text = await res.text()
+        let infos = JSON.parse(text)
+        SetSessionID(infos[0])
+        SetUsername(infos[1])
     }
 }

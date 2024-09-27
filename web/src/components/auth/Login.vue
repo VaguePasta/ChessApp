@@ -106,11 +106,11 @@ function Register(username, password) {
 <style scoped>
 @font-face {
   font-family: gilroy-bold;
-  src:url("@/assets/fonts/Gilroy-Bold.ttf");
+  src:url("/assets/fonts/Gilroy-Bold.ttf");
 }
 @font-face {
   font-family: gilroy-medium;
-  src:url("@/assets/fonts/Gilroy-Medium.ttf");
+  src:url("/assets/fonts/Gilroy-Medium.ttf");
 }
 .confirm-button {
   width: 50%;
@@ -129,7 +129,7 @@ function Register(username, password) {
 .login-board {
   width: 55%;
   aspect-ratio: 16/9;
-  background-image: linear-gradient(to left, transparent, #272a37 75%), url("@/assets/images/log_background.jpg");
+  background-image: linear-gradient(to left, transparent, #272a37 75%), url("/assets/images/log_background.jpg");
   background-size: 100%;
   background-position: center;
   margin: auto;

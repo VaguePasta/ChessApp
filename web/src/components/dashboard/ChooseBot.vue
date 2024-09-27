@@ -128,7 +128,7 @@ function ChooseBot(botType) {
 @import "UI.css";
 @font-face {
   font-family: gilroy-regular;
-  src:url("@/assets/fonts/Gilroy-Regular.ttf");
+  src:url("/assets/fonts/Gilroy-Regular.ttf");
 }
 .pick-button:hover {
   background: v-bind(hover);

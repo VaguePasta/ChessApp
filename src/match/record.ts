@@ -1,5 +1,6 @@
 import LZString from 'lz-string';
 import {DatabaseConn} from "../database/init";
+import {Active_sessions} from "../auth/account";
 
 export function CompressMatch(value: bigint) {
     const bytes = [];
@@ -33,7 +34,12 @@ export async function GetRecordList(userid: number) {
     return JSON.stringify(response)
 }
 
-export async function GetRecord(id: string) {
-    let moves = await DatabaseConn`select moves from game_records where game_id = ${id}`
+export async function GetRecord(sessionID: string | undefined, id: string) {
+    if (!sessionID) return null
+    let requester = Active_sessions.get(sessionID)
+    if (!requester) return null
+    requester.LastUsed = Date.now()
+    let moves = await DatabaseConn`select moves from game_records where game_id = ${id} and(white_player = ${requester.Userid} or black_player = ${requester.Userid})`
+    if (!moves.count) return null
     return DecompressMatch(moves[0].moves.toString())
 }

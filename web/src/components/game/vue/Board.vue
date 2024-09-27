@@ -416,7 +416,7 @@ defineExpose({
 <style scoped>
 @import "../styles/pieces.css";
 .board {
-  background-image: url("@/assets/board/board.svg");
+  background-image: url("/assets/board/board.svg");
   margin: 0;
   background-repeat: no-repeat;
   background-position: center;

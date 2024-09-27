@@ -21,26 +21,29 @@ watch(props.rating, (newRating) => {
 <template>
 <div class="rate-graph">
   <div class="lose-chance" :style="styles[0]" :key="valueLose">
-    {{(props.rating.rate[2] >= 10) ? props.rating.rate[2] / 10 + "%" : ""}}
+    {{(props.rating.rate[2] >= 60) ? props.rating.rate[2] / 10 + "%" : ""}}
   </div>
 
   <div class="draw-change" :key="valueDraw">
-    {{(props.rating.rate[1] >= 10) ? props.rating.rate[1] / 10 + "%" : ""}}
+    {{(props.rating.rate[1] >= 60) ? props.rating.rate[1] / 10 + "%" : ""}}
   </div>
 
   <div class="win-chance" :style="styles[1]" :key="valueWin">
-    {{(props.rating.rate[0] >= 10) ? props.rating.rate[0] / 10 + "%" : ""}}
+    {{(props.rating.rate[0] >= 60) ? props.rating.rate[0] / 10 + "%" : ""}}
   </div>
 </div>
 </template>
 
 <style scoped>
 .rate-graph {
-  height: 90vh;
-  width: 5vw;
-  position: absolute;
-  left: 10%;
-  display: inline-block;
+  writing-mode: vertical-lr;
+  color: black;
+  height: 100%;
+  font-size: 1rem;
+  display: flex;
+  flex: 1;
+  transform: rotate(-180deg);
+  flex-direction: row-reverse;
 }
 .win-chance {
   display: flex;

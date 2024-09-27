@@ -88,8 +88,12 @@ app.get('/records', (req, res) => {
     })
 })
 app.get('/record/:id', (req, res) => {
-    GetRecord(req.url.split("/")[2]).then((result) => {
-        res.end(result)
+    GetRecord(req.header('authorization'), req.url.split("/")[2]).then((result) => {
+        if (!result) {
+            res.status(401)
+            res.end()
+        }
+        else res.end(result)
     })
 })
 server.listen(8080, async () => {

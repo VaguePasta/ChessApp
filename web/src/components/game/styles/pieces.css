@@ -1,36 +1,36 @@
 .black-pawn {
-    background-image: url("@/assets/board/black_pawn.svg");
+    background-image: url("/assets/board/black_pawn.svg");
 }
 .white-pawn {
-    background-image: url("@/assets/board/white_pawn.svg");
+    background-image: url("/assets/board/white_pawn.svg");
 }
 .black-knight {
-    background-image: url("@/assets/board/black_knight.svg");
+    background-image: url("/assets/board/black_knight.svg");
 }
 .white-knight {
-    background-image: url("@/assets/board/white_knight.svg");
+    background-image: url("/assets/board/white_knight.svg");
 }
 .black-bishop {
-    background-image: url("@/assets/board/black_bishop.svg");
+    background-image: url("/assets/board/black_bishop.svg");
 }
 .white-bishop {
-    background-image: url("@/assets/board/white_bishop.svg");
+    background-image: url("/assets/board/white_bishop.svg");
 }
 .black-rook {
-    background-image: url("@/assets/board/black_rook.svg");
+    background-image: url("/assets/board/black_rook.svg");
 }
 .white-rook {
-    background-image: url("@/assets/board/white_rook.svg");
+    background-image: url("/assets/board/white_rook.svg");
 }
 .black-queen {
-    background-image: url("@/assets/board/black_queen.svg");
+    background-image: url("/assets/board/black_queen.svg");
 }
 .white-queen {
-    background-image: url("@/assets/board/white_queen.svg");
+    background-image: url("/assets/board/white_queen.svg");
 }
 .black-king {
-    background-image: url("@/assets/board/black_king.svg");
+    background-image: url("/assets/board/black_king.svg");
 }
 .white-king {
-    background-image: url("@/assets/board/white_king.svg");
+    background-image: url("/assets/board/white_king.svg");
 }

@@ -35,15 +35,8 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
     if (!match) return
     let connection = match.Players[0].Connection
     // @ts-ignore
-    const evaluator = spawn(process.env.STOCKFISH_DIRECTORY.toString(), {shell: false, windowsHide: true})
-    // @ts-ignore
     const opponent = spawn(process.env.RODENT_DIRECTORY.toString(), {shell: false, windowsHide: true})
     const depth = ChooseDepth(elo)
-    evaluator.on('spawn', () => {
-        evaluator.stdin.write("setoption name UCI_ShowWDL value true\n")
-        evaluator.stdin.write("uci\n")
-        evaluator.stdin.write("position startpos\n")
-    })
     opponent.on('spawn', () => {
         opponent.stdin.write("uci\n")
         opponent.stdin.write("setoption name UCI_Elo value " + elo + "\n")
@@ -61,19 +54,12 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
     })
     connection.on('close', () => {
         Matches.delete(match.Token)
-        evaluator.stdin.write("quit\n")
         opponent.stdin.write("quit\n")
     })
     const positions = { position: "position startpos moves "}
     let responseFromEngine = ""
     connection.on('message', (data: any) => {
         if (data.toString() === "ok") {
-            evaluator.stdout.on('data', (data: any) => {
-                let evaluation = data.toString()
-                if (evaluation.includes("info depth 13")) {
-                    connection.emit('eval', ExtractWDL(evaluation))
-                }
-            })
             opponent.stdout.on('data', (data: any) => {
                 let response = data.toString()
                 if (response.includes("bestmove") && response.length >= 14) {
@@ -91,19 +77,16 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
             })
             let game = match.Game
             if (match.Players[0].Side === game.GameState.SideToMove) {
-                evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 connection.send(game.LegalMoveList.moves.slice(0, game.LegalMoveList.count))
             }
             else {
-                evaluator.stdin.write("go depth 13\n")
                 game.LegalMoveList = GenerateMoves(game.GameState)
                 GetFirstMove(opponent, depth)
             }
             connection.on('message', (data: any) => {
                 if (game.GameState.SideToMove === match.Players[0].Side) {
                     if (ProcessMove(parseInt(data), game, positions, connection, match)) {
-                        GetEvaluation(evaluator, positions)
                         GetResponse(opponent, depth, positions)
                     }
                 }
@@ -115,12 +98,8 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
                     positions.position += algebraic + " "
                     setTimeout(() => {
                         SendResponse(connection, legalMoves)
-                        GetEvaluation(evaluator, positions)
                     }, 1000)
                 }
-            })
-            connection.on('eval', (evaluations: number[]) => {
-                SendEvaluation(connection, evaluations)
             })
         }
     })
@@ -131,19 +110,9 @@ function GetFirstMove(opponent: ChildProcessWithoutNullStreams, depth: number) {
 function SendResponse(connection: any, legalMoveList: Uint16Array | number) {
     connection.send(legalMoveList)
 }
-function SendEvaluation(connection: any, evaluations: number[]) {
-    let evals = new Uint16Array(4)
-    evals.set(evaluations, 1)
-    evals[0] = 0
-    connection.send(evals)
-}
 function GetResponse(opponent: ChildProcessWithoutNullStreams, depth: number, positions: {position: string}) {
     opponent.stdin.write(positions.position + "\n")
     opponent.stdin.write("go depth " + depth + "\n")
-}
-function GetEvaluation(evaluator: ChildProcessWithoutNullStreams, positions: {position: string}) {
-    evaluator.stdin.write(positions.position + "\n")
-    evaluator.stdin.write("go depth 13\n")
 }
 function ProcessMove(move: number, game: Game, positions: {position: string}, connection: any, match: Match): number {
     match.Moves += BigInt(move) << BigInt(16 * match.MoveCount++)
@@ -257,9 +226,4 @@ function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
 export function ExtractMove(response: string): string {
     let bestMoveIndex = response.lastIndexOf("bestmove")
     return response.slice(bestMoveIndex + 9, bestMoveIndex + 14)
-}
-function ExtractWDL(response: string): number[] {
-    let wdl_index = response.indexOf("wdl", 45)
-    let cutoff_index = response.indexOf("nodes", 55) - 1
-    return response.slice(wdl_index + 4, cutoff_index).split(" ").map(Number)
 }

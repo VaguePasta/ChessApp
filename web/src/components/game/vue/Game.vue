@@ -4,8 +4,7 @@ import {onBeforeMount, ref} from "vue";
   import Board from "@/components/game/vue/Board.vue";
   import {useRouter} from "vue-router";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
-  import Rating from "@/components/game/vue/Rating.vue";
-import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/sounds.js";
+  import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/sounds.js";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref({moves: []})
@@ -18,7 +17,6 @@ import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/s
     new Audio(),
     new Audio(),
   ])
-  const rating = ref({rate: [333, 333, 333]})
   onBeforeMount(() => {
     if (!websocket) router.push("/dashboard")
     else {
@@ -56,16 +54,7 @@ import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/s
         }
       }
       else {
-        let moves = new Uint16Array(msg.data)
-        if (props.bot === "1" && moves[0] === 0) {
-          if (sideToMove.value !== parseInt(information[information.length - 1])) {
-            rating.value.rate = [moves[3], moves[2], moves[1]]
-          }
-          else {
-            rating.value.rate = [moves[1], moves[2], moves[3]]
-          }
-        }
-        else if (sideToMove.value !== parseInt(information[information.length - 1])) {
+        if (sideToMove.value !== parseInt(information[information.length - 1])) {
           legalMoves.value.moves = new Uint16Array(msg.data)
         }
       }
@@ -84,7 +73,6 @@ import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/s
 
 <template>
   <div style="position: absolute; width:80%; height: 90vh; left: 50%; top: 50%; transform: translate(-50%, -50%)">
-    <Rating v-if="parseInt(props.bot) === 1" :rating="rating" :side="parseInt(information.slice(-1))"/>
     <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves" :replaying="false"/>
     <div v-if="result" class="end-popup">
       <div style="font-size: 3.2vh; padding-bottom: 1vh;">The game has concluded.</div>
