@@ -4,7 +4,6 @@ import {onBeforeMount, ref} from "vue";
   import Board from "@/components/game/vue/Board.vue";
   import {useRouter} from "vue-router";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
-  import {drawing_sound, losing_sound, winning_sound} from "@/components/game/js/sounds.js";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref({moves: []})
@@ -13,9 +12,9 @@ import {onBeforeMount, ref} from "vue";
   const information = atob(props.pos)
   const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
   const sounds = ref([
-    new Audio(),
-    new Audio(),
-    new Audio(),
+    new Audio("/assets/sounds/win.mp3"),
+    new Audio("/assets/sounds/lose.mp3"),
+    new Audio("/assets/sounds/draw.mp3"),
   ])
   onBeforeMount(() => {
     if (!websocket) router.push("/dashboard")

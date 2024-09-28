@@ -8,19 +8,14 @@ import CoordinatesY from "@/components/game/vue/CoordinatesY.vue";
 import CoordinatesX from "@/components/game/vue/CoordinatesX.vue";
 import Highlights from "@/components/game/vue/Highlights.vue";
 import {ParseFEN} from "@/components/game/js/FEN.js";
-import {capture_sound, castling_sound, move_sound, promote_sound} from "@/components/game/js/sounds.js";
 let sounds
 onBeforeMount(() => {
   sounds = ref([
-    new Audio(),
-    new Audio(),
-    new Audio(),
-    new Audio()
+    new Audio("/assets/sounds/move.mp3"),
+    new Audio("/assets/sounds/capture.mp3"),
+    new Audio("/assets/sounds/castle.mp3"),
+    new Audio("/assets/sounds/promote.mp3"),
   ])
-  sounds.value[0].src = move_sound
-  sounds.value[1].src = capture_sound
-  sounds.value[2].src = castling_sound
-  sounds.value[3].src = promote_sound
 })
 const pendingMove = ref(0)
 const promoting = ref(false)

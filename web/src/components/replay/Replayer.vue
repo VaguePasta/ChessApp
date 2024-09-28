@@ -6,7 +6,7 @@ import {GetNotation} from "@/components/game/js/Moves.js";
 import {Replays} from "@/components/dashboard/replays.js";
 import {useRouter} from "vue-router";
 import {SessionID} from "@/connection/connections.js";
-import Rating from "@/components/game/vue/Rating.vue";
+import Rating from "@/components/replay/Rating.vue";
 import {ExtractCP} from "@/components/replay/engine.js";
 const router = useRouter()
 let evaler
@@ -14,9 +14,12 @@ const props = defineProps(['id'])
 const moves = ref([])
 const gameinfo = ref(null)
 const move_array = ref(null)
-const rating = ref({rate: [59, 940, 1]})
-const win_rate = [50, 50]
+const rating = ref({rate: [50, 50]})
+const evaluations = ref(["", ""])
+let furthest = true
 let move_string = "position startpos moves"
+let furthest_index = 0
+let bestmove
 onBeforeMount(() => {
   if (!SessionID) {
     router.push("/dashboard")
@@ -37,31 +40,29 @@ onBeforeMount(() => {
         if (input[11] === "1" && input[12] === "2") {
           let evaluation = ExtractCP(input)
           if (!evaluation[0]) {
-            win_rate[sideToMove.value] = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
-            console.log(win_rate)
-          }
-          else {
-
-          }
-          let data = evaluation[2]
-          if (current_move_index.value % 2 !== 0) {
-            if (!sideToView.value) {
-              rating.value.rate = data.reverse()
+            let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
+            let winDiff = winRate - rating.value.rate[sideToMove.value]
+            if (furthest && winDiff > 5) {
+              if (winDiff <= 10) evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] +  ": Inaccuracy. " + bestmove + " was best.\n"
+              else if (winDiff <= 20) evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Mistake. " + bestmove + " was best.\n"
+              else evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Blunder. " + bestmove + " was best.\n"
             }
-            else rating.value.rate = data
+            rating.value.rate[sideToMove.value] = winRate
+            rating.value.rate[1 - sideToMove.value] = 100 - winRate
           }
-          else {
-            if (!sideToView.value) {
-              rating.value.rate = data
-            }
-            else rating.value.rate = data.reverse()
+          else if (furthest) {
+            evaluations.value[sideToMove.value] += "Mate in " + Math.abs(evaluation[1]) + ".\n"
           }
+        }
+        else if (input.slice(0,8) === "bestmove") {
+          bestmove = input.slice(9, input.indexOf(" ", 9))
         }
       }
       evaler.postMessage('uci')
-      evaler.postMessage('setoption name UCI_ShowWDL value true')
       evaler.postMessage('setoption name UCI_AnalyseMode value true')
       evaler.postMessage('setoption name Use NNUE value true')
+      evaler.postMessage('position startpos')
+      evaler.postMessage('go depth 12')
     }
   }
 })
@@ -85,10 +86,15 @@ const list = ref(null)
 const move_ref = ref(null)
 function NextMove() {
   if (current_move_index.value < move_array.value.length) {
+    furthest = false
     move_string += " " + GetNotation(move_array.value[current_move_index.value])
     current_move.value.moves = new Uint16Array([move_array.value[current_move_index.value++]])
     evaler.postMessage(move_string)
     evaler.postMessage("go depth 12")
+    if (current_move_index.value > furthest_index) {
+      furthest_index = current_move_index.value
+      furthest = true
+    }
     if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
   }
 }
@@ -99,12 +105,12 @@ function ChangeSide() {
 }
 function FlipWatch() {
   sideToView.value = 1 - sideToView.value
-  rating.value.rate = rating.value.rate.reverse()
 }
 const sideToView = ref(0)
 const board_ref = ref(null)
 function PreviousMove() {
   if (current_move_index.value) {
+    furthest = false
     board_ref.value.UnmakeMove(move_array.value[--current_move_index.value], move_array.value[current_move_index.value - 1])
     move_string = move_string.slice(0, move_string.lastIndexOf(" "))
     evaler.postMessage(move_string)
@@ -137,29 +143,22 @@ function ReturnToDashboard() {
 <template>
   <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
   <div class="match-info">
-    <div style="width: 95%; height: 100%; display: flex; flex-direction: column; flex-shrink: 0">
-      <div style="width: 100%; height: 5%; display: flex">
-        <button style="background-image: url('/assets/images/leave.svg')" class="info-buttons" @click="ReturnToDashboard"/>
-        <button style="background-image: url('/assets/images/analyze.svg')" class="info-buttons"/>
-      </div>
-      <div style="width: 100%; flex: 1; display: flex; align-items: center; flex-direction: column; padding-top: 5px">
+      <div style="height: 100%; width: 95%; flex-shrink: 0; display: flex; align-items: center; flex-direction: column; padding-top: 5px">
         <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; border-bottom: 1px solid white">
           <div style="flex: 1; color: white">{{sideToView ? gameinfo.white_player ? gameinfo.white_player : "BOT" : gameinfo.black_player ? gameinfo.black_player : "BOT"}}</div>
-          <div style="scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
-
+          <div style="white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
+              {{sideToView ? evaluations[0] : evaluations[1]}}
           </div>
         </div>
         <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; padding-bottom: 5px">
-          <div style="scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
-
+          <div style="white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
+              {{sideToView ? evaluations[1] : evaluations[0]}}
           </div>
           <div style="flex: 1; color: white">{{sideToView ? gameinfo.black_player ? gameinfo.black_player : "BOT" : gameinfo.white_player ? gameinfo.white_player : "BOT"}}</div>
         </div>
       </div>
-    </div>
-    <Rating :key="sideToView" :side="sideToView" :rating="rating"/>
+      <Rating :key="sideToView" :side="sideToView" :rating="rating"/>
   </div>
-
 
   <div style="flex-direction: column; display: flex; position: absolute; left: 75%; right: 5%; top: 5%; height: 90%">
     <div ref="list" class="move-list">
@@ -213,24 +212,24 @@ function ReturnToDashboard() {
 .match-info {
   display: flex;
   position: absolute;
-  top: 5%;
-  left: 1%;
-  width: 25%;
-  height: 90%;
-  border: 1px solid black;
-  align-items: center;
   background-color: #082c3a;
+  left: 0.5%;
+  top: 5%;
+  width: 27%;
+  height: 90%;
+  align-items: center;
   font-family: gilroy-medium, sans-serif;
   font-size: 25px;
   color: white;
+  box-sizing: border-box;
 }
 .info-buttons {
   background-color: #727687;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 15%;
+  background-size: 10%;
   height: 100%;
-  width: 50%;
+  width: 100%;
   border: none;
 }
 .info-buttons:hover {
