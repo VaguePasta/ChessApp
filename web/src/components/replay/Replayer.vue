@@ -1,5 +1,5 @@
 <script setup>
-import {onBeforeMount, onBeforeUnmount, ref} from "vue";
+import {onBeforeMount, onBeforeUnmount, onMounted, ref} from "vue";
 import Board from "@/components/game/vue/Board.vue";
 import {FENStart} from "@/components/game/js/FEN.js";
 import {GetNotation} from "@/components/game/js/Moves.js";
@@ -13,13 +13,18 @@ let evaler
 const props = defineProps(['id'])
 const moves = ref([])
 const gameinfo = ref(null)
-const move_array = ref(null)
+const sideToView = ref(0)
+let move_array = null
 const rating = ref({rate: [50, 50]})
 const evaluations = ref(["", ""])
-let furthest = true
+const analyzed = []
 let move_string = "position startpos moves"
-let furthest_index = 0
 let bestmove
+let bestmoves = []
+let current_best_move = 0
+let previous = false
+let mate = 0
+let analyze_complete = ref(false)
 onBeforeMount(() => {
   if (!SessionID) {
     router.push("/dashboard")
@@ -30,41 +35,59 @@ onBeforeMount(() => {
       router.push("/dashboard")
     } else {
       gameinfo.value = _moves
-      move_array.value = Base64ToUint16(_moves.moves)
-      move_array.value.forEach((value) => {
+      move_array = Base64ToUint16(_moves.moves)
+      move_array.forEach((value) => {
         moves.value.push(GetNotation(value))
       })
       evaler = new Worker("assets/scripts/stockfish-nnue-16.js")
       evaler.onmessage = (e) => {
         let input = e.data.toString()
-        if (input[11] === "1" && input[12] === "2") {
+        if (input.slice(0, 13) === "info depth 16" && input.indexOf("currmove") === -1) {
           let evaluation = ExtractCP(input)
-          if (!evaluation[0]) {
-            let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
-            let winDiff = winRate - rating.value.rate[sideToMove.value]
-            if (furthest && winDiff > 5) {
-              if (winDiff <= 10) evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] +  ": Inaccuracy. " + bestmove + " was best.\n"
-              else if (winDiff <= 20) evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Mistake. " + bestmove + " was best.\n"
-              else evaluations.value[1 - sideToMove.value] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Blunder. " + bestmove + " was best.\n"
-            }
-            rating.value.rate[sideToMove.value] = winRate
-            rating.value.rate[1 - sideToMove.value] = 100 - winRate
-          }
-          else if (furthest) {
-            evaluations.value[sideToMove.value] += "Mate in " + Math.abs(evaluation[1]) + ".\n"
-          }
+          analyzed.push(evaluation)
+          ProcessEvaluation(evaluation, sideToMove.value)
         }
         else if (input.slice(0,8) === "bestmove") {
+          analyze_complete.value = true
           bestmove = input.slice(9, input.indexOf(" ", 9))
         }
       }
-      evaler.postMessage('uci')
-      evaler.postMessage('setoption name UCI_AnalyseMode value true')
-      evaler.postMessage('setoption name Use NNUE value true')
-      evaler.postMessage('position startpos')
-      evaler.postMessage('go depth 12')
     }
   }
+})
+function ProcessEvaluation(evaluation, side) {
+  if (!evaluation[0]) {
+    let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
+    let winDiff = winRate - rating.value.rate[side]
+    if (!previous && winDiff >= 4) {
+      if (bestmove)
+        bestmoves.push(bestmove)
+      if (winDiff <= 10) evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] +  ": Inaccuracy. " + bestmoves[current_best_move] + " was best.\n"
+      else if (winDiff <= 15) evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Mistake. " + bestmoves[current_best_move] + " was best.\n"
+      else evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Blunder. " + bestmoves[current_best_move] + " was best.\n"
+      current_best_move++
+    }
+    else if (previous && winDiff >= 4 && current_best_move) {
+      current_best_move--
+    }
+    rating.value.rate[side] = winRate
+    rating.value.rate[1 - side] = 100 - winRate
+  }
+  else if (!previous) {
+    if (!mate) {
+      mate = current_move_index.value
+      evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Checkmate is now inevitable. Mate in " + Math.abs(evaluation[1]) + ".\n"
+    }
+    else
+      evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Mate in " + Math.abs(evaluation[1]) + ".\n"
+  }
+}
+onMounted(() => {
+  evaler.postMessage('uci')
+  evaler.postMessage('setoption name UCI_AnalyseMode value true')
+  evaler.postMessage('setoption name Use NNUE value true')
+  evaler.postMessage('position startpos')
+  evaler.postMessage('go depth 16')
 })
 function Base64ToUint16(base64) {
   let binaryString = atob(base64);
@@ -80,43 +103,53 @@ function Base64ToUint16(base64) {
   }
   return uint16
 }
-const current_move = ref({moves: []})
-const current_move_index = ref(0)
-const list = ref(null)
-const move_ref = ref(null)
-function NextMove() {
-  if (current_move_index.value < move_array.value.length) {
-    furthest = false
-    move_string += " " + GetNotation(move_array.value[current_move_index.value])
-    current_move.value.moves = new Uint16Array([move_array.value[current_move_index.value++]])
-    evaler.postMessage(move_string)
-    evaler.postMessage("go depth 12")
-    if (current_move_index.value > furthest_index) {
-      furthest_index = current_move_index.value
-      furthest = true
-    }
-    if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
-  }
-}
 const sideToMove = ref(0);
-
 function ChangeSide() {
   sideToMove.value = 1 - sideToMove.value;
 }
 function FlipWatch() {
   sideToView.value = 1 - sideToView.value
 }
-const sideToView = ref(0)
+const current_move = ref({moves: []})
+const current_move_index = ref(0)
+const list = ref(null)
+const move_ref = ref(null)
 const board_ref = ref(null)
-function PreviousMove() {
-  if (current_move_index.value) {
-    furthest = false
-    board_ref.value.UnmakeMove(move_array.value[--current_move_index.value], move_array.value[current_move_index.value - 1])
-    move_string = move_string.slice(0, move_string.lastIndexOf(" "))
-    evaler.postMessage(move_string)
-    evaler.postMessage("go depth 12")
-    if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
+function NextMove() {
+  if (!analyze_complete.value || current_move_index.value >= move_array.length) return
+  previous = false
+  if (move_string === "position startpos") move_string = "position startpos moves"
+  move_string += " " + GetNotation(move_array[current_move_index.value])
+  current_move.value.moves = new Uint16Array([move_array[current_move_index.value++]])
+  if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
+  if (analyzed.length >= current_move_index.value + 1) {
+    ProcessEvaluation(analyzed[current_move_index.value], 1 - sideToMove.value)
   }
+  else if (current_move_index.value < move_array.length) {
+    analyze_complete.value = false
+    evaler.postMessage(move_string)
+    evaler.postMessage("go depth 16")
+  }
+  else if (current_move_index.value === move_array.length) analyze_complete.value = true
+}
+function PreviousMove() {
+  if (analyze_complete.value && current_move_index.value) {
+    previous = true
+    board_ref.value.UnmakeMove(move_array[--current_move_index.value], move_array[current_move_index.value - 1])
+    move_string = move_string.slice(0, move_string.lastIndexOf(" "))
+    if (move_string.slice(move_string.length - 5) === 'moves') move_string = "position startpos"
+    let previousEvaluation = evaluations.value[sideToMove.value].lastIndexOf(Math.ceil((current_move_index.value + 1) / 2) + ".")
+    if (previousEvaluation !== -1) {
+      evaluations.value[sideToMove.value] = evaluations.value[sideToMove.value].slice(0, previousEvaluation)
+      if (current_move_index.value + 1 === mate) {
+        mate = 0
+      }
+    }
+    if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
+    bestmove = null
+    ProcessEvaluation(analyzed[current_move_index.value], sideToMove.value)
+  }
+  if (!current_move_index.value) analyze_complete.value = true
 }
 function Advance(event) {
   if (event.key === "ArrowRight") NextMove()
@@ -157,7 +190,7 @@ function ReturnToDashboard() {
           <div style="flex: 1; color: white">{{sideToView ? gameinfo.black_player ? gameinfo.black_player : "BOT" : gameinfo.white_player ? gameinfo.white_player : "BOT"}}</div>
         </div>
       </div>
-      <Rating :key="sideToView" :side="sideToView" :rating="rating"/>
+      <Rating :key="sideToView" :side="sideToView" :rating="rating" :analyzed="analyze_complete"/>
   </div>
 
   <div style="flex-direction: column; display: flex; position: absolute; left: 75%; right: 5%; top: 5%; height: 90%">

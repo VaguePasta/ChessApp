@@ -19,9 +19,6 @@ import {onBeforeMount, ref} from "vue";
   onBeforeMount(() => {
     if (!websocket) router.push("/dashboard")
     else {
-      sounds.value[0].src = winning_sound
-      sounds.value[1].src = losing_sound
-      sounds.value[2].src = drawing_sound
       websocket.addEventListener('close', lostConnection)
       if (parseInt(information[information.length - 1]) === sideToMove.value) {
         websocket.onmessage = (msg) => {
