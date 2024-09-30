@@ -69,7 +69,7 @@ import {onBeforeMount, ref} from "vue";
 
 <template>
   <div style="position: absolute; width:80%; height: 90vh; left: 50%; top: 50%; transform: translate(-50%, -50%)">
-    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves" :replaying="false"/>
+    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
     <div v-if="result" class="end-popup">
       <div style="font-size: 3.2vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>

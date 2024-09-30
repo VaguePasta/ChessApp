@@ -7,7 +7,9 @@ import {Replays} from "@/components/dashboard/replays.js";
 import {useRouter} from "vue-router";
 import {SessionID} from "@/connection/connections.js";
 import Rating from "@/components/replay/Rating.vue";
-import {ExtractCP} from "@/components/replay/engine.js";
+import {ExtractCP, Base64ToUint16} from "@/components/replay/engine.js";
+import Mistakes from "@/components/replay/Mistakes.vue";
+import Evaluations from "@/components/replay/Evaluations.vue";
 const router = useRouter()
 let evaler
 const props = defineProps(['id'])
@@ -25,33 +27,34 @@ let current_best_move = 0
 let previous = false
 let mate = 0
 let analyze_complete = ref(false)
+let mistake = ref(null)
 onBeforeMount(() => {
   if (!SessionID) {
     router.push("/dashboard")
+    return
   }
-  else {
-    const _moves = Replays.find(element => element.game_id === props.id)
-    if (!_moves) {
-      router.push("/dashboard")
-    } else {
-      gameinfo.value = _moves
-      move_array = Base64ToUint16(_moves.moves)
-      move_array.forEach((value) => {
-        moves.value.push(GetNotation(value))
-      })
-      evaler = new Worker("assets/scripts/stockfish-nnue-16.js")
-      evaler.onmessage = (e) => {
-        let input = e.data.toString()
-        if (input.slice(0, 13) === "info depth 16" && input.indexOf("currmove") === -1) {
-          let evaluation = ExtractCP(input)
-          analyzed.push(evaluation)
-          ProcessEvaluation(evaluation, sideToMove.value)
-        }
-        else if (input.slice(0,8) === "bestmove") {
-          analyze_complete.value = true
-          bestmove = input.slice(9, input.indexOf(" ", 9))
-        }
-      }
+  const _moves = Replays.find(element => element.game_id === props.id)
+  if (!_moves) {
+    router.push("/dashboard")
+    return;
+  }
+  document.addEventListener("keydown", Keypress)
+  gameinfo.value = _moves
+  move_array = Base64ToUint16(_moves.moves)
+  move_array.forEach((value) => {
+    moves.value.push(GetNotation(value))
+  })
+  evaler = new Worker("assets/scripts/stockfish-nnue-16.js")
+  evaler.onmessage = (e) => {
+    let input = e.data.toString()
+    if (input.slice(0, 13) === "info depth 16" && input.indexOf("currmove") === -1) {
+      let evaluation = ExtractCP(input)
+      analyzed.push(evaluation)
+    }
+    else if (input.slice(0,8) === "bestmove") {
+      ProcessEvaluation(analyzed[analyzed.length - 1], sideToMove.value)
+      bestmove = input.slice(9, input.indexOf(" ", 9))
+      analyze_complete.value = true
     }
   }
 })
@@ -59,15 +62,25 @@ function ProcessEvaluation(evaluation, side) {
   if (!evaluation[0]) {
     let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
     let winDiff = winRate - rating.value.rate[side]
-    if (!previous && winDiff >= 4) {
-      if (bestmove)
+    if (!previous && winDiff >= 5) {
+      if (bestmove) {
         bestmoves.push(bestmove)
-      if (winDiff <= 10) evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] +  ": Inaccuracy. " + bestmoves[current_best_move] + " was best.\n"
-      else if (winDiff <= 15) evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Mistake. " + bestmoves[current_best_move] + " was best.\n"
-      else evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Blunder. " + bestmoves[current_best_move] + " was best.\n"
+      }
+      if (winDiff <= 10) {
+        mistake.value = "#56b4e9"
+        evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] +  ": Inaccuracy. " + bestmoves[current_best_move] + " was best.\n"
+      }
+      else if (winDiff <= 15) {
+        mistake.value = "#e69f00"
+        evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Mistake. " + bestmoves[current_best_move] + " was best.\n"
+      }
+      else {
+        mistake.value = "#df5353"
+        evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " +  moves.value[current_move_index.value - 1] +  ": Blunder. " + bestmoves[current_best_move] + " was best.\n"
+      }
       current_best_move++
     }
-    else if (previous && winDiff >= 4 && current_best_move) {
+    else if (previous && winDiff >= 5 && current_best_move) {
       current_best_move--
     }
     rating.value.rate[side] = winRate
@@ -89,20 +102,6 @@ onMounted(() => {
   evaler.postMessage('position startpos')
   evaler.postMessage('go depth 16')
 })
-function Base64ToUint16(base64) {
-  let binaryString = atob(base64);
-  let bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  let uint16 = new Uint16Array(bytes.length / 2)
-  let counter = 0
-  for (let i = 0; i < uint16.length; i++) {
-    uint16[uint16.length - i - 1] = (bytes[counter] << 8) | bytes[counter + 1]
-    counter += 2
-  }
-  return uint16
-}
 const sideToMove = ref(0);
 function ChangeSide() {
   sideToMove.value = 1 - sideToMove.value;
@@ -118,6 +117,7 @@ const board_ref = ref(null)
 function NextMove() {
   if (!analyze_complete.value || current_move_index.value >= move_array.length) return
   previous = false
+  mistake.value = null
   if (move_string === "position startpos") move_string = "position startpos moves"
   move_string += " " + GetNotation(move_array[current_move_index.value])
   current_move.value.moves = new Uint16Array([move_array[current_move_index.value++]])
@@ -133,25 +133,24 @@ function NextMove() {
   else if (current_move_index.value === move_array.length) analyze_complete.value = true
 }
 function PreviousMove() {
-  if (analyze_complete.value && current_move_index.value) {
-    previous = true
-    board_ref.value.UnmakeMove(move_array[--current_move_index.value], move_array[current_move_index.value - 1])
-    move_string = move_string.slice(0, move_string.lastIndexOf(" "))
-    if (move_string.slice(move_string.length - 5) === 'moves') move_string = "position startpos"
-    let previousEvaluation = evaluations.value[sideToMove.value].lastIndexOf(Math.ceil((current_move_index.value + 1) / 2) + ".")
-    if (previousEvaluation !== -1) {
-      evaluations.value[sideToMove.value] = evaluations.value[sideToMove.value].slice(0, previousEvaluation)
-      if (current_move_index.value + 1 === mate) {
-        mate = 0
-      }
+  if (!analyze_complete.value || !current_move_index.value) return
+  previous = true
+  mistake.value = null
+  board_ref.value.UnmakeMove(move_array[--current_move_index.value], move_array[current_move_index.value - 1])
+  move_string = move_string.slice(0, move_string.lastIndexOf(" "))
+  if (move_string.slice(move_string.length - 5) === 'moves') move_string = "position startpos"
+  let previousEvaluation = evaluations.value[sideToMove.value].lastIndexOf(Math.ceil((current_move_index.value + 1) / 2) + ".")
+  if (previousEvaluation !== -1) {
+    evaluations.value[sideToMove.value] = evaluations.value[sideToMove.value].slice(0, previousEvaluation)
+    if (current_move_index.value + 1 === mate) {
+      mate = 0
     }
-    if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
-    bestmove = null
-    ProcessEvaluation(analyzed[current_move_index.value], sideToMove.value)
   }
-  if (!current_move_index.value) analyze_complete.value = true
+  if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
+  bestmove = null
+  ProcessEvaluation(analyzed[current_move_index.value], sideToMove.value)
 }
-function Advance(event) {
+function Keypress(event) {
   if (event.key === "ArrowRight") NextMove()
   else if (event.key === "ArrowLeft") PreviousMove()
   else if (event.key === "Tab") {
@@ -160,33 +159,25 @@ function Advance(event) {
     event.preventDefault()
   }
   else if (event.key === "Escape") {
-    ReturnToDashboard()
+    router.push({path : "/dashboard"})
   }
 }
-document.addEventListener("keydown", Advance)
 onBeforeUnmount(() => {
-  document.removeEventListener("keydown", Advance)
+  document.removeEventListener("keydown", Keypress)
   evaler.terminate()
 })
-function ReturnToDashboard() {
-  router.push({path : "/dashboard"})
-}
 </script>
 
 <template>
-  <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move" :replaying="true"/>
+  <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move"/>
   <div class="match-info">
       <div style="height: 100%; width: 95%; flex-shrink: 0; display: flex; align-items: center; flex-direction: column; padding-top: 5px">
         <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; border-bottom: 1px solid white">
           <div style="flex: 1; color: white">{{sideToView ? gameinfo.white_player ? gameinfo.white_player : "BOT" : gameinfo.black_player ? gameinfo.black_player : "BOT"}}</div>
-          <div style="white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
-              {{sideToView ? evaluations[0] : evaluations[1]}}
-          </div>
+          <Evaluations :evaluation="sideToView ? evaluations[0] : evaluations[1]"/>
         </div>
         <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; padding-bottom: 5px">
-          <div style="white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
-              {{sideToView ? evaluations[1] : evaluations[0]}}
-          </div>
+          <Evaluations :evaluation="sideToView ? evaluations[1] : evaluations[0]"/>
           <div style="flex: 1; color: white">{{sideToView ? gameinfo.black_player ? gameinfo.black_player : "BOT" : gameinfo.white_player ? gameinfo.white_player : "BOT"}}</div>
         </div>
       </div>
@@ -203,6 +194,7 @@ function ReturnToDashboard() {
       <button style="background-image: url('/assets/images/flip.svg')" class="buttons" @click="FlipWatch"/>
     </div>
   </div>
+  <Mistakes :mistake="mistake" :position="current_move.moves[0]" :side="sideToView" :key="sideToView"/>
 </template>
 
 <style scoped>

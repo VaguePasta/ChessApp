@@ -19,7 +19,7 @@ onBeforeMount(() => {
 })
 const pendingMove = ref(0)
 const promoting = ref(false)
-const props = defineProps(['side', 'pos', 'legalMoves', 'sideToMove', 'replaying'])
+const props = defineProps(['side', 'pos', 'legalMoves', 'sideToMove'])
 const selectingPiece = ref(0)
 const movableSquare = ref([])
 const lastMoves = ref([])
@@ -176,7 +176,7 @@ function SendMove(move, check) {
   }
 }
 watch(props.legalMoves, () => {
-  if (props.replaying || (props.sideToMove !== props.side)) {
+  if ((props.legalMoves.moves.length === 1) || (props.sideToMove !== props.side)) {
     Move(props.legalMoves.moves[0], false)
   }
 })
@@ -403,7 +403,7 @@ defineExpose({
         <LegalSquare v-for="move in movableSquare" :side="props.side" :move="move" :key="move"/>
       </div>
 
-      <div v-if="promoting || props.replaying" class="modal-mask"/>
+      <div v-if="promoting" class="modal-mask"/>
     </div>
   </div>
 </template>

@@ -3,8 +3,8 @@
   const props = defineProps(['side','information','sideToMove'])
   const oldType = ref(props.information.Piece[1])
   const oldPos = ref(props.information.Piece[2])
-  const oldLeft = ref(props.side === 0 ? ((props.information.Piece[2]) % 8) * 12.5 + '%' : 87.5 - ((props.information.Piece[2]) % 8) * 12.5 + '%')
-  const oldTop = ref(props.side === 0 ? Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%' : 87.5 - Math.floor((props.information.Piece[2]) / 8) * 12.5 + '%')
+  const oldLeft = ref(props.side === 0 ? (props.information.Piece[2] % 8) * 12.5 + '%' : 87.5 - (props.information.Piece[2] % 8) * 12.5 + '%')
+  const oldTop = ref(props.side === 0 ? Math.floor(props.information.Piece[2] / 8) * 12.5 + '%' : 87.5 - Math.floor(props.information.Piece[2] / 8) * 12.5 + '%')
   let styleClass = "";
   function SetStyle() {
     switch (props.information.Piece[1] & 0b1111) {

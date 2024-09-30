@@ -54,11 +54,11 @@ function CheckEndGame(gameState: GameState, legalMoveList: MoveList) {
         return 5
     } else if (piecesLeft === 3n) {
         if (CountSetBit(gameState.OccupancyBoards[Side.white]) === 1n) {
-            if (gameState.PieceBitboards[Pieces.k] || gameState.PieceBitboards[Pieces.b]) {
+            if (gameState.PieceBitboards[Pieces.n] || gameState.PieceBitboards[Pieces.b]) {
                 return 5
             }
         } else {
-            if (gameState.PieceBitboards[Pieces.K] || gameState.PieceBitboards[Pieces.B]) {
+            if (gameState.PieceBitboards[Pieces.N] || gameState.PieceBitboards[Pieces.B]) {
                 return 5
             }
         }
