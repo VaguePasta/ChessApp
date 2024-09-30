@@ -382,7 +382,6 @@ defineExpose({
 </script>
 
 <template>
-  <div>
     <div class="board" @click="PlayerMove">
       <CoordinatesY style="left: 0.25vh;" :side="props.side"/>
       <CoordinatesX style="bottom: 0.25vh; left: 10.5%" :side="props.side"/>
@@ -405,7 +404,6 @@ defineExpose({
 
       <div v-if="promoting" class="modal-mask"/>
     </div>
-  </div>
 </template>
 
 <style scoped>
@@ -417,12 +415,13 @@ defineExpose({
   background-position: center;
   background-size: cover;
   aspect-ratio: 1/1;
-  height: 90vh;
-  position: absolute;
+  height: 100%;
+  width: 100%;
+  position: relative;
   z-index: 0;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  left: 0;
+  top: 0;
+  container-type: size;
 }
 .move-mask {
   position: absolute;

@@ -8,7 +8,7 @@ onUpdated(() => {
 </script>
 
 <template>
-  <div ref="container" style="scroll-behavior: smooth; white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 0 3px; box-sizing: border-box">
+  <div ref="container" style="scroll-behavior: smooth; white-space: pre-wrap; scrollbar-width: thin; overflow-y: scroll; font-size: 16px; height: 90%; flex-shrink: none; width: 100%; padding: 1% 3%; box-sizing: border-box">
     {{props.evaluation}}
   </div>
 </template>

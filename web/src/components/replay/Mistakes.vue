@@ -17,7 +17,7 @@ watch(props, (prop) => {
 </script>
 
 <template>
-  <div style="aspect-ratio: 1/1; height: 90vh; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);">
+  <div style="width: 100%; height: 100%; position: absolute; left: 0; top: 0;">
     <div v-if="props.mistake" class="mistaken">{{props.mistake === '#56b4e9' ? '?!' : (props.mistake === '#e69f00' ? '?' : '??')}}</div>
   </div>
 </template>
