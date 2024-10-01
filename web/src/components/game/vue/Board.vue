@@ -195,7 +195,6 @@ function ProcessMove(move, pieceKey) {
       RemovePiece(targetSquare + 8)
     } else {
       PieceCapture(targetSquare - 8)
-      CapturedPieces.value.push(pieces.value.get(FindPiece(targetSquare - 8)))
       RemovePiece(targetSquare - 8)
     }
     sounds.value[1].play()

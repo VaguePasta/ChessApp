@@ -10,6 +10,7 @@ import Rating from "@/components/replay/Rating.vue";
 import {ExtractCP, Base64ToUint16} from "@/components/replay/engine.js";
 import Mistakes from "@/components/replay/Mistakes.vue";
 import Evaluations from "@/components/replay/Evaluations.vue";
+import Chart from "@/components/replay/Chart.vue";
 const router = useRouter()
 let evaler
 const props = defineProps(['id'])
@@ -19,7 +20,7 @@ const sideToView = ref(0)
 let move_array = null
 const rating = ref({rate: [50, 50]})
 const evaluations = ref(["", ""])
-const analyzed = []
+const analyzed = ref([])
 let move_string = "position startpos moves"
 let bestmove
 let bestmoves = []
@@ -48,10 +49,10 @@ onBeforeMount(() => {
     let input = e.data.toString()
     if (input.slice(0, 13) === "info depth 16" && input.indexOf("currmove") === -1) {
       let evaluation = ExtractCP(input)
-      analyzed.push(evaluation)
+      analyzed.value.push(evaluation)
     }
     else if (input.slice(0,8) === "bestmove") {
-      ProcessEvaluation(analyzed[analyzed.length - 1], sideToMove.value)
+      ProcessEvaluation(analyzed.value[analyzed.value.length - 1], sideToMove.value)
       bestmove = input.slice(9, 13).trimEnd()
       analyze_complete.value = true
     }
@@ -61,17 +62,11 @@ function ProcessEvaluation(evaluation, side) {
   if (!evaluation[0]) {
     let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
     let winDiff = winRate - rating.value.rate[side]
-    if (!previous) {
-      if (current_move_index.value && analyzed[current_move_index.value - 1][0]) {
-        mistake.value = "#e69f00"
-        evaluations.value[1 - side] +=
-            Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1]
-            + ": Force checkmate missed.\n"
-      }
-      else if (winDiff >= 5) {
+    if (!previous && winDiff >= 5) {
         if (bestmove) {
           bestmoves.push(bestmove)
         }
+        console.log(bestmoves)
         if (winDiff <= 10) {
           mistake.value = "#56b4e9"
           evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Inaccuracy. "
@@ -86,7 +81,6 @@ function ProcessEvaluation(evaluation, side) {
               + bestmoves[current_best_move] + " was best.\n"
         }
         current_best_move++
-      }
     }
     else if (previous && winDiff >= 5 && current_best_move) {
       current_best_move--
@@ -102,6 +96,8 @@ onMounted(() => {
   evaler.postMessage('uci')
   evaler.postMessage('setoption name UCI_AnalyseMode value true')
   evaler.postMessage('setoption name Use NNUE value true')
+  evaler.postMessage('setoption name Threads value ' + navigator.hardwareConcurrency)
+  evaler.postMessage('setoption name Hash value 64')
   evaler.postMessage('position startpos')
   evaler.postMessage('go depth 16')
 })
@@ -117,6 +113,7 @@ const current_move_index = ref(0)
 const list = ref(null)
 const move_ref = ref(null)
 const board_ref = ref(null)
+const list_top = ref(null)
 function NextMove() {
   if (!analyze_complete.value || current_move_index.value >= move_array.length) return
   previous = false
@@ -124,9 +121,9 @@ function NextMove() {
   if (move_string === "position startpos") move_string = "position startpos moves"
   move_string += " " + GetNotation(move_array[current_move_index.value])
   current_move.value.moves = new Uint16Array([move_array[current_move_index.value++]])
-  if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
-  if (analyzed.length >= current_move_index.value + 1) {
-    ProcessEvaluation(analyzed[current_move_index.value], 1 - sideToMove.value)
+  if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop - list_top.value.offsetTop
+  if (analyzed.value.length >= current_move_index.value + 1) {
+    ProcessEvaluation(analyzed.value[current_move_index.value], 1 - sideToMove.value)
   }
   else if (current_move_index.value < move_array.length) {
     analyze_complete.value = false
@@ -146,9 +143,9 @@ function PreviousMove() {
   if (previousEvaluation !== -1) {
     evaluations.value[sideToMove.value] = evaluations.value[sideToMove.value].slice(0, previousEvaluation)
   }
-  if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop
+  if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop - list_top.value.offsetTop
   bestmove = null
-  ProcessEvaluation(analyzed[current_move_index.value], sideToMove.value)
+  ProcessEvaluation(analyzed.value[current_move_index.value], sideToMove.value)
 }
 function Keypress(event) {
   if (event.key === "ArrowRight") NextMove()
@@ -165,6 +162,11 @@ function Keypress(event) {
 onBeforeUnmount(() => {
   document.removeEventListener("keydown", Keypress)
   evaler.terminate()
+  bestmoves = []
+  bestmove = null
+  move_array = null
+  current_best_move = 0
+  previous = false
 })
 </script>
 
@@ -187,18 +189,22 @@ onBeforeUnmount(() => {
     <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move"/>
     <Mistakes :mistake="mistake" :position="current_move.moves[0]" :side="sideToView" :key="sideToView"/>
   </div>
-    <div style="flex-direction: column; display: inline-flex; height: 100%; width: 20%">
-    <div ref="list" class="move-list">
-      <div class="move" v-for="(move, index) in moves" ref="move_ref" :class="index === current_move_index - 1 ? 'current-move' : ''">{{!(index % 2) ? index/2 + 1 + ". ": ""}}{{move}}</div>
-    </div>
-    <div style="display: flex; flex: 1">
-      <button style="background-image: url('/assets/images/arrow.svg'); transform: scaleX(-1)" class="buttons" @click="PreviousMove"/>
-      <button style="background-image: url('/assets/images/arrow.svg')" class="buttons" @click="NextMove"/>
-      <button style="background-image: url('/assets/images/flip.svg')" class="buttons" @click="FlipWatch"/>
+    <div style="display: flex; flex-direction: column; height: 100%; width: 25%; justify-content: space-between">
+      <div style="padding: 1%; height: 49.5%; display: block; width: 100%; background-color: #082c3a; box-sizing: border-box">
+        <Chart :data="analyzed"/>
+      </div>
+      <div ref="list_top" style="flex-direction: column; display: flex; height: 49.5%; width: 100%">
+        <div ref="list" class="move-list">
+          <div class="move" v-for="(move, index) in moves" ref="move_ref" :class="index === current_move_index - 1 ? 'current-move' : ''">{{!(index % 2) ? index/2 + 1 + ". ": ""}}{{move}}</div>
+        </div>
+        <div style="padding-top: 1%; display: flex; flex: 1; justify-content: space-between">
+          <button style="background-image: url('/assets/images/p_arrow.svg')" class="buttons" @click="PreviousMove"/>
+          <button style="background-image: url('/assets/images/arrow.svg')" class="buttons" @click="NextMove"/>
+          <button style="background-image: url('/assets/images/flip.svg')" class="buttons" @click="FlipWatch"/>
+        </div>
+      </div>
     </div>
   </div>
-  </div>
-
 </template>
 
 <style scoped>
@@ -208,14 +214,14 @@ onBeforeUnmount(() => {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  height: 90%;
+  width: 100%;
+  height: 95%;
   display: flex;
   align-items: center;
   justify-content: space-evenly;
 }
 .move-list {
-  height: 95%;
+  height: 90%;
   overflow-y: scroll;
   color: white;
   background-color: #082c3a;
@@ -235,16 +241,12 @@ onBeforeUnmount(() => {
 }
 .buttons {
   background-color: #1e2327;
-  border-style: solid;
-  border-color: black;
-  border-width: 1px 1px 1px 0;
+  border: 1px solid black;
   padding: 2%;
-  margin: 1% 0;
   background-repeat: no-repeat;
   background-position: center;
   background-size: 25%;
-  height: 100%;
-  width: 33.33%;
+  width: 33%;
 }
 .buttons:hover {
   background-color: gray;
