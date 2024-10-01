@@ -67,6 +67,7 @@ const data = ref ({
         },
         color: 'white',
         borderColor: 'white',
+        pointHoverBackgroundColor: '#4891cc',
       },
       {
         data: data_array,
@@ -77,6 +78,7 @@ const data = ref ({
         borderColor: 'black',
         color: 'black',
         backgroundColor: 'black',
+        pointHoverBackgroundColor: '#4891cc',
       }
     ]
   })
@@ -105,6 +107,17 @@ const options = ref({
             return item.datasetIndex ? (100 - item.formattedValue).toFixed(2) + '%' : Number(item.formattedValue).toFixed(2) + '%'
           },
           title: (tooltipItems) => 'Ply '+ tooltipItems[0].label
+        },
+        backgroundColor: "#4891cc",
+        caretPadding: 20,
+        size: 17,
+        bodyFont: {
+          size: 13,
+          family: "gilroy-medium, sans-serif"
+        },
+        titleFont: {
+          size: 13,
+          family: "gilroy-medium, sans-serif"
         },
       },
       legend: {

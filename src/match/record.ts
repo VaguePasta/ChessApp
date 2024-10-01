@@ -22,7 +22,7 @@ interface Game_records {
     date: string
 }
 export async function GetRecordList(userid: number) {
-    let result = await DatabaseConn`select game_id, white.username as white_player, black.username as black_player, win_side, date_added from game_records as game left join users as white on white_player = white.user_id  left join users as black on black_player = black.user_id where game.white_player = ${userid} or game.black_player = ${userid}`
+    let result = await DatabaseConn`select game_id, white.username as white_player, black.username as black_player, win_side, date_added from game_records as game left join users as white on white_player = white.user_id  left join users as black on black_player = black.user_id where game.white_player = ${userid} or game.black_player = ${userid} order by date_added desc`
     let response = Array<Game_records>(result.count)
     result.forEach((_, index) => {
         response[index] = {

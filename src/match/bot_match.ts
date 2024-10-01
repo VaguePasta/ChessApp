@@ -9,6 +9,7 @@ import {GenMoveString, MakeMove, MoveFlags, MoveList} from "../game/moves/move";
 import {AlgebraicToIndex} from "../game/bitboard/conversions";
 import {CompressMatch} from "./record";
 import {DatabaseConn} from "../database/init";
+
 export function NewBotMatch(ws: any, sessionID: string, side: string, elo: number, personality: string): boolean {
     let user = Active_sessions.get(sessionID)
     if (!user) return false
@@ -62,18 +63,19 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
         if (data.toString() === "ok") {
             opponent.stdout.on('data', (data: any) => {
                 let response = data.toString()
-                if (response.includes("bestmove") && response.length >= 14) {
-                    connection.emit('response', ExtractMove(response.trim()))
-                    responseFromEngine = ""
-                }
-                else {
-                    responseFromEngine += response
-                    let bestmoveindex = responseFromEngine.lastIndexOf("bestmove")
-                    if (bestmoveindex !== -1 && responseFromEngine.length - bestmoveindex >= 14) {
-                        connection.emit('response', ExtractMove(responseFromEngine))
+                if (response[response.length - 1] === "\n") {
+                    if (responseFromEngine) {
+                        responseFromEngine += response
+                        if (responseFromEngine.includes("bestmove")) {
+                            connection.emit('response', responseFromEngine.slice(9, 13).trimEnd())
+                        }
                         responseFromEngine = ""
                     }
+                    else if (response.indexOf("bestmove") !== -1) {
+                        connection.emit('response', response.slice(9, 13).trimEnd())
+                    }
                 }
+                else responseFromEngine += response
             })
             let game = match.Game
             if (match.Players[0].Side === game.GameState.SideToMove) {
@@ -222,8 +224,4 @@ function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
     }
     let move = MakeMove(source, target, MoveFlags.quiet_moves)
     return <number>legalMoveList.moves.find((element) => (element & 0xfff) === move)
-}
-export function ExtractMove(response: string): string {
-    let bestMoveIndex = response.lastIndexOf("bestmove")
-    return response.slice(bestMoveIndex + 9, bestMoveIndex + 14)
 }

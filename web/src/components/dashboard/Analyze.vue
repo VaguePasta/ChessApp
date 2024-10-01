@@ -82,7 +82,7 @@ function Replay(game_id) {
     <div style="font-family: gilroy-medium, sans-serif; color: white">Games played:</div>
     <div class="game-list">
       <div @mousemove="HoverRecord" class="game-record" v-for="game in list" @click="Replay(game.game_id)" :key="game.game_id" :style="SetStyle(game.win_side, game.white_player)">
-        <div style="display: inline-block; pointer-events: none; user-select: none">
+        <div style="max-width: 40%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block; pointer-events: none; user-select: none">
         {{game.white_player ? game.white_player : 'BOT'}} vs {{game.black_player ? game.black_player : 'BOT'}}
         </div>
         <div style="float: right; pointer-events: none; user-select: none">

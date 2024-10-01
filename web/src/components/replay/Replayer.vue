@@ -52,12 +52,28 @@ onBeforeMount(() => {
       analyzed.value.push(evaluation)
     }
     else if (input.slice(0,8) === "bestmove") {
+      if (current_move_index.value && !analyzed.value[analyzed.value.length - 1][0]) {
+        accuracy[1 - sideToMove.value] =
+            (
+                (
+                    accuracy[1 - sideToMove.value] * Math.floor((analyzed.value.length - 2) / 2))
+                    + MoveAccuracy(analyzed.value[analyzed.value.length - 1]
+                )
+            ) / Math.ceil((analyzed.value.length - 1) / 2)
+      }
       ProcessEvaluation(analyzed.value[analyzed.value.length - 1], sideToMove.value)
       bestmove = input.slice(9, 13).trimEnd()
       analyze_complete.value = true
     }
   }
 })
+function MoveAccuracy(lastAnalysis) {
+  let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * lastAnalysis[1])) - 1)
+  let diff = winRate - rating.value.rate[sideToMove.value]
+  if (diff <= 0) return 100
+  let raw  = (103.1668100711649 * Math.exp(-0.04354415386753951 * diff) + -3.166924740191411) + 1
+  return Math.max(0, Math.min(raw, 100))
+}
 function ProcessEvaluation(evaluation, side) {
   if (!evaluation[0]) {
     let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
@@ -66,7 +82,6 @@ function ProcessEvaluation(evaluation, side) {
         if (bestmove) {
           bestmoves.push(bestmove)
         }
-        console.log(bestmoves)
         if (winDiff <= 10) {
           mistake.value = "#56b4e9"
           evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Inaccuracy. "
@@ -90,6 +105,7 @@ function ProcessEvaluation(evaluation, side) {
   }
   else if (!previous) {
     evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Mate in " + Math.abs(evaluation[1]) + ".\n"
+
   }
 }
 onMounted(() => {
@@ -114,6 +130,7 @@ const list = ref(null)
 const move_ref = ref(null)
 const board_ref = ref(null)
 const list_top = ref(null)
+let accuracy = [0, 0]
 function NextMove() {
   if (!analyze_complete.value || current_move_index.value >= move_array.length) return
   previous = false
@@ -167,30 +184,47 @@ onBeforeUnmount(() => {
   move_array = null
   current_best_move = 0
   previous = false
+  accuracy = []
 })
 </script>
 
 <template>
   <div class="analyze">
     <div class="match-info">
-        <div style="height: 100%; width: 95%; flex-shrink: 0; display: flex; align-items: center; flex-direction: column; padding-top: 5px">
-          <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; border-bottom: 1px solid white">
-            <div style="flex: 1; color: white">{{sideToView ? gameinfo.white_player ? gameinfo.white_player : "BOT" : gameinfo.black_player ? gameinfo.black_player : "BOT"}}</div>
+        <div class="match-eval">
+          <div class="eval-box" style="border-bottom: 5px groove white">
+            <div class="player-info" style="border-bottom: 1px solid white">
+              <div class="player-name">
+                {{sideToView ? gameinfo.white_player ? gameinfo.white_player : "BOT" : gameinfo.black_player ? gameinfo.black_player : "BOT"}}
+              </div>
+              <div class="accuracy">
+                <div class="accuracy-image"/>
+                <div style="flex: 1">{{sideToView ? accuracy[0].toFixed(2) : accuracy[1].toFixed(2)}}%</div>
+              </div>
+            </div>
             <Evaluations :evaluation="sideToView ? evaluations[0] : evaluations[1]"/>
           </div>
-          <div style="width: 100%; height: 50%; display: flex; align-items: center; flex-direction: column; padding-bottom: 5px">
+          <div class="eval-box" style="padding-bottom: 0.7%">
             <Evaluations :evaluation="sideToView ? evaluations[1] : evaluations[0]"/>
-            <div style="flex: 1; color: white">{{sideToView ? gameinfo.black_player ? gameinfo.black_player : "BOT" : gameinfo.white_player ? gameinfo.white_player : "BOT"}}</div>
+            <div class="player-info" style="border-top: 1px solid white">
+              <div class="player-name">
+                {{sideToView ? gameinfo.black_player ? gameinfo.black_player : "BOT" : gameinfo.white_player ? gameinfo.white_player : "BOT"}}
+              </div>
+                <div class="accuracy">
+                  <div class="accuracy-image"/>
+                  <div style="flex: 1">{{sideToView ? accuracy[1].toFixed(2) : accuracy[0].toFixed(2)}}%</div>
+                </div>
+            </div>
           </div>
         </div>
         <Rating :key="sideToView" :side="sideToView" :rating="rating" :analyzed="analyze_complete"/>
     </div>
-    <div style="position: relative; left: 0; top: 0; height: 100%; aspect-ratio: 1/1; display: inline-block">
+    <div class="analyze-board">
     <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move"/>
     <Mistakes :mistake="mistake" :position="current_move.moves[0]" :side="sideToView" :key="sideToView"/>
   </div>
-    <div style="display: flex; flex-direction: column; height: 100%; width: 25%; justify-content: space-between">
-      <div style="padding: 1%; height: 49.5%; display: block; width: 100%; background-color: #082c3a; box-sizing: border-box">
+    <div class="chart-and-moves">
+      <div class="win-chart-box">
         <Chart :data="analyzed"/>
       </div>
       <div ref="list_top" style="flex-direction: column; display: flex; height: 49.5%; width: 100%">
@@ -228,6 +262,7 @@ onBeforeUnmount(() => {
   scrollbar-width: thin;
   width: 100%;
   flex-shrink: none;
+  font-family: gilroy-regular, sans-serif;
 }
 .move {
   padding: 2%;
@@ -272,5 +307,73 @@ onBeforeUnmount(() => {
 }
 .info-buttons:hover {
   background-color: lightseagreen;
+}
+.accuracy {
+  text-align: right;
+  width: 30%;
+  padding: 0 1.5%;
+  border-left: 1px solid white;
+  display: flex;
+}
+.accuracy-image {
+  height: 100%;
+  width: 20%;
+  background-image: url('/assets/images/accuracy.svg');
+  background-repeat: no-repeat;
+  background-position: center; background-size: 100%;
+  flex-shrink: 0;
+}
+.player-info {
+  width: 100%;
+  display: flex;
+  flex: 1;
+  color: white;
+}
+.player-name {
+  flex: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-left: 2%
+}
+.eval-box {
+  width: 100%;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  flex-direction: column;
+}
+.match-eval {
+  height: 100%;
+  width: 95%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding-top: 5px
+}
+.chart-and-moves {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 25%;
+  justify-content: space-between
+}
+.win-chart-box {
+  padding: 1%;
+  height: 49.5%;
+  display: block;
+  width: 100%;
+  background-color: #082c3a;
+  box-sizing: border-box
+}
+.analyze-board {
+  position: relative;
+  left: 0;
+  top: 0;
+  height: 100%;
+  aspect-ratio: 1/1;
+  display: inline-block
 }
 </style>
