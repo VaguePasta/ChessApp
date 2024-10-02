@@ -39,23 +39,45 @@ const hoverPlugin = {
     }
   }
 }
-const props = defineProps(['data'])
+const props = defineProps(['data', 'current', 'side'])
 const length = ref(0)
 let data_array = []
 let label_array = []
-watch(props.data, (newData) => {
+const side = ref(0)
+watch(() => props.data, (newData) => {
   if (!newData[newData.length - 1][0]) {
     let winRate = (50 + 50 * (2 / (1 + Math.exp(-0.00368208 * newData[newData.length - 1][1])) - 1))
-    if (!(newData.length % 2)) winRate = (100 - winRate)
+    if ((!side.value && !(newData.length % 2)) || (side.value && (newData.length % 2))) {
+      winRate = 100 - winRate
+    }
     data_array = [...data_array, winRate]
   }
-  else data_array = [...data_array, data_array[data_array.length - 1]]
+  else
+    data_array = [...data_array, data_array[data_array.length - 1]]
   label_array = [...label_array, data_array.length - 1]
-  data.value.labels = label_array
-  data.value.datasets[0].data = data_array
-  data.value.datasets[1].data = data_array
-  length.value = data_array.length
+  UpdatePosition(props.current)
+}, {deep: true})
+watch(() => props.current ,(newData) => {
+  if (newData <= props.data.length - 1) {
+    UpdatePosition(newData)
+  }
 })
+watch(() => props.side, (newSide) => {
+  if (newSide !== side) {
+    side.value = newSide
+    data_array = Array.from(data_array, (value) => 100 - value)
+    data.value.datasets[0].data = data_array
+    data.value.datasets[0].fill.target = side.value ? 'end' : 'origin'
+    data.value.datasets[1].data = data_array
+    data.value.datasets[1].fill.target = side.value ? 'origin' : 'end'
+  }
+})
+function UpdatePosition(newPos) {
+  data.value.labels = label_array.slice(0, newPos + 1)
+  data.value.datasets[0].data = data_array.slice(0, newPos + 1)
+  data.value.datasets[1].data = data_array.slice(0, newPos + 1)
+  length.value = newPos
+}
 const data = ref ({
     labels: label_array,
     datasets: [
@@ -63,20 +85,18 @@ const data = ref ({
         data: data_array,
         fill: {
           target: 'origin',
-          above: 'white'
+          above: 'white',
+          below: 'white'
         },
-        color: 'white',
-        borderColor: 'white',
         pointHoverBackgroundColor: '#4891cc',
       },
       {
         data: data_array,
         fill: {
           target: 'end',
+          above: 'black',
           below: 'black'
         },
-        borderColor: 'black',
-        color: 'black',
         backgroundColor: 'black',
         pointHoverBackgroundColor: '#4891cc',
       }
@@ -104,7 +124,9 @@ const options = ref({
       tooltip: {
         callbacks: {
           label: (item) => {
-            return item.datasetIndex ? (100 - item.formattedValue).toFixed(2) + '%' : Number(item.formattedValue).toFixed(2) + '%'
+            if (!side.value)
+              return item.datasetIndex ? (100 - item.formattedValue).toFixed(2) + '%' : Number(item.formattedValue).toFixed(2) + '%'
+            else return !item.datasetIndex ? (100 - item.formattedValue).toFixed(2) + '%' : Number(item.formattedValue).toFixed(2) + '%'
           },
           title: (tooltipItems) => 'Ply '+ tooltipItems[0].label
         },
@@ -149,7 +171,7 @@ const options = ref({
 </script>
 
 <template>
-  <Line :plugins="[hoverPlugin]" :key="length" :data="data" :options="options"/>
+  <Line :plugins="[hoverPlugin]" :key="length+side" :data="data" :options="options"/>
 </template>
 
 <style scoped>

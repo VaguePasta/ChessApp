@@ -6,7 +6,7 @@ import {onBeforeMount, ref} from "vue";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
   const result = ref(null)
   const connectionLost = ref(null)
-  const legalMoves = ref({moves: []})
+  const legalMoves = ref([])
   const props = defineProps(['pos', 'bot'])
   const router = useRouter()
   const information = atob(props.pos)
@@ -22,7 +22,7 @@ import {onBeforeMount, ref} from "vue";
       websocket.addEventListener('close', lostConnection)
       if (parseInt(information[information.length - 1]) === sideToMove.value) {
         websocket.onmessage = (msg) => {
-          legalMoves.value.moves = new Uint16Array([0, ...new Uint16Array(msg.data)])
+          legalMoves.value = new Uint16Array([0, ...new Uint16Array(msg.data)])
           defineOnMessage()
         }
       } else {
@@ -51,7 +51,7 @@ import {onBeforeMount, ref} from "vue";
       }
       else {
         if (sideToMove.value !== parseInt(information[information.length - 1])) {
-          legalMoves.value.moves = new Uint16Array(msg.data)
+          legalMoves.value = new Uint16Array(msg.data)
         }
       }
     }

@@ -66,12 +66,12 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
                 if (response[response.length - 1] === "\n") {
                     if (responseFromEngine) {
                         responseFromEngine += response
-                        if (responseFromEngine.includes("bestmove")) {
+                        if (responseFromEngine.startsWith("bestmove")) {
                             connection.emit('response', responseFromEngine.slice(9, 13).trimEnd())
                         }
                         responseFromEngine = ""
                     }
-                    else if (response.indexOf("bestmove") !== -1) {
+                    else if (response.startsWith("bestmove")) {
                         connection.emit('response', response.slice(9, 13).trimEnd())
                     }
                 }

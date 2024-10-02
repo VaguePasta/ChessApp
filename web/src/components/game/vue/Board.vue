@@ -30,12 +30,12 @@ onMounted(() => {
 function MoveIsLegal(move) {
   if (props.side !== props.sideToMove) return move
   else {
-    if (props.legalMoves.moves !== null) {
+    if (props.legalMoves !== null) {
       let sourceSquare = GetSourceSquare(move)
       let targetSquare = GetTargetSquare(move)
-      for (let i = 1; i < props.legalMoves.moves.length; i++) {
-        if (sourceSquare === GetSourceSquare(props.legalMoves.moves[i]) && targetSquare === GetTargetSquare(props.legalMoves.moves[i])) {
-          return props.legalMoves.moves[i]
+      for (let i = 1; i < props.legalMoves.length; i++) {
+        if (sourceSquare === GetSourceSquare(props.legalMoves[i]) && targetSquare === GetTargetSquare(props.legalMoves[i])) {
+          return props.legalMoves[i]
         }
       }
     }
@@ -47,9 +47,9 @@ function SelectingPiece(event, pieceNumber) {
   if (selectingPiece.value === 0) {
     selectingPiece.value = pieceNumber
     pieces.value.get(pieceNumber).Selected = true
-    for (let i = 1; i < props.legalMoves.moves.length; i++) {
-      if (GetSourceSquare(props.legalMoves.moves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
-        movableSquare.value.push(props.legalMoves.moves[i])
+    for (let i = 1; i < props.legalMoves.length; i++) {
+      if (GetSourceSquare(props.legalMoves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
+        movableSquare.value.push(props.legalMoves[i])
       }
     }
     event.preventDefault()
@@ -68,9 +68,9 @@ function SelectingPiece(event, pieceNumber) {
       movableSquare.value.length = 0
       selectingPiece.value = 0
       pieces.value.get(pieceNumber).Selected = true
-      for (let i = 1; i < props.legalMoves.moves.length; i++) {
-        if (GetSourceSquare(props.legalMoves.moves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
-          movableSquare.value.push(props.legalMoves.moves[i])
+      for (let i = 1; i < props.legalMoves.length; i++) {
+        if (GetSourceSquare(props.legalMoves[i]) === pieces.value.get(pieceNumber).Piece[2]) {
+          movableSquare.value.push(props.legalMoves[i])
         }
       }
       selectingPiece.value = pieceNumber
@@ -175,11 +175,11 @@ function SendMove(move, check) {
     websocket.send(send_move)
   }
 }
-watch(props.legalMoves, () => {
-  if ((props.legalMoves.moves.length === 1) || (props.sideToMove !== props.side)) {
-    Move(props.legalMoves.moves[0], false)
+watch(() => props.legalMoves, () => {
+  if ((props.legalMoves.length === 1) || (props.sideToMove !== props.side)) {
+    Move(props.legalMoves[0], false)
   }
-})
+}, {deep:true})
 const emit = defineEmits(['change-side'])
 function ProcessMove(move, pieceKey) {
   let targetSquare = GetTargetSquare(move)

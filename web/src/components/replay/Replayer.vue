@@ -18,7 +18,7 @@ const moves = ref([])
 const gameinfo = ref(null)
 const sideToView = ref(0)
 let move_array = null
-const rating = ref({rate: [50, 50]})
+const rating = ref([50, 50])
 const evaluations = ref(["", ""])
 const analyzed = ref([])
 let move_string = "position startpos moves"
@@ -69,7 +69,7 @@ onBeforeMount(() => {
 })
 function MoveAccuracy(lastAnalysis) {
   let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * lastAnalysis[1])) - 1)
-  let diff = winRate - rating.value.rate[sideToMove.value]
+  let diff = winRate - rating.value[sideToMove.value]
   if (diff <= 0) return 100
   let raw  = (103.1668100711649 * Math.exp(-0.04354415386753951 * diff) + -3.166924740191411) + 1
   return Math.max(0, Math.min(raw, 100))
@@ -77,7 +77,7 @@ function MoveAccuracy(lastAnalysis) {
 function ProcessEvaluation(evaluation, side) {
   if (!evaluation[0]) {
     let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
-    let winDiff = winRate - rating.value.rate[side]
+    let winDiff = winRate - rating.value[side]
     if (!previous && winDiff >= 5) {
         if (bestmove) {
           bestmoves.push(bestmove)
@@ -100,8 +100,8 @@ function ProcessEvaluation(evaluation, side) {
     else if (previous && winDiff >= 5 && current_best_move) {
       current_best_move--
     }
-    rating.value.rate[side] = winRate
-    rating.value.rate[1 - side] = 100 - winRate
+    rating.value[side] = winRate
+    rating.value[1 - side] = 100 - winRate
   }
   else if (!previous) {
     evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Mate in " + Math.abs(evaluation[1]) + ".\n"
@@ -124,7 +124,7 @@ function ChangeSide() {
 function FlipWatch() {
   sideToView.value = 1 - sideToView.value
 }
-const current_move = ref({moves: []})
+const current_move = ref([])
 const current_move_index = ref(0)
 const list = ref(null)
 const move_ref = ref(null)
@@ -137,7 +137,7 @@ function NextMove() {
   mistake.value = null
   if (move_string === "position startpos") move_string = "position startpos moves"
   move_string += " " + GetNotation(move_array[current_move_index.value])
-  current_move.value.moves = new Uint16Array([move_array[current_move_index.value++]])
+  current_move.value = new Uint16Array([move_array[current_move_index.value++]])
   if (current_move_index.value >= 1) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop - list_top.value.offsetTop
   if (analyzed.value.length >= current_move_index.value + 1) {
     ProcessEvaluation(analyzed.value[current_move_index.value], 1 - sideToMove.value)
@@ -220,12 +220,12 @@ onBeforeUnmount(() => {
         <Rating :key="sideToView" :side="sideToView" :rating="rating" :analyzed="analyze_complete"/>
     </div>
     <div class="analyze-board">
-    <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legal-moves="current_move"/>
-    <Mistakes :mistake="mistake" :position="current_move.moves[0]" :side="sideToView" :key="sideToView"/>
+    <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legalMoves="current_move"/>
+    <Mistakes :mistake="mistake" :position="current_move[0]" :side="sideToView" :key="sideToView"/>
   </div>
     <div class="chart-and-moves">
       <div class="win-chart-box">
-        <Chart :data="analyzed"/>
+        <Chart :side="sideToView" :current="current_move_index" :data="analyzed"/>
       </div>
       <div ref="list_top" style="flex-direction: column; display: flex; height: 49.5%; width: 100%">
         <div ref="list" class="move-list">
