@@ -1,4 +1,4 @@
-import {CountSetBit} from "../bitboard/bit_operations";
+import {CountSetBit, PrintBoard} from "../bitboard/bit_operations";
 import {PawnAttackTables} from "../pieces/pawn";
 import {MakeMove, MoveFlags, MoveList} from "./move";
 
@@ -13,7 +13,7 @@ export function GeneratePawnCaptures(pawnBoard: bigint, enemyOccupancy: bigint, 
         let attacks = PawnAttackTables[side][Number(source)] & (enemyOccupancy | EnPassant(enPassantSquare))
         while(attacks) {
             target = CountSetBit((attacks & -attacks) - 1n)
-            if (target >= 7n && target <= 56n) {
+            if (target > 7n && target < 56n) {
                 if (enPassantSquare !== -1 && target === BigInt(enPassantSquare)) {
                     moveList.moves[moveList.count++] = MakeMove(Number(source), Number(target), MoveFlags.ep_capture)
                 }

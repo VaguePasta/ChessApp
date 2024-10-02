@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import {ref, watch} from "vue";
 const props = defineProps(['side','information','sideToMove'])
 const oldType = ref(props.information.Piece[1])

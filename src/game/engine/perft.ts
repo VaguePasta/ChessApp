@@ -1,5 +1,5 @@
 import {GenerateMoves} from "../moves/movegen";
-import {GameState} from "./game";
+import {GameState, NewGame} from "./game";
 import {GenMoveString} from "../moves/move";
 import {ExecuteMove} from "../moves/execute_move";
 
@@ -21,14 +21,16 @@ export function Perft(game: GameState, depth: number): number {
     }
     return nodes
 }
-export function Divide(game: GameState, depth: number) {
+export function Divide(FEN: string, depth: number) {
+    // @ts-ignore
+    let game: GameState = NewGame(FEN).GameState
     let total = 0
     let moveList = GenerateMoves(game)
     for (let i = 0; i < moveList.count; i++) {
         let GameCopy = structuredClone(game)
         GameCopy = ExecuteMove(GameCopy, moveList.moves[i])
         let nodes_at = Perft(GameCopy, depth - 1)
-        console.log(GenMoveString(moveList.moves[i], game.SideToMove) + ": " + nodes_at)
+        console.log(GenMoveString(moveList.moves[i]) + ": " + nodes_at)
         total += nodes_at
     }
     console.log("Node searched:", total)

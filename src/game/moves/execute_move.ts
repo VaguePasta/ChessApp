@@ -13,27 +13,44 @@ export function ExecuteMove(gameInfo: GameState, move: number): GameState {
     let ZobristHash = game.PastPositions[0]
     if (game.SideToMove === Side.black) game.FullMoves++
     let movePiece = GivenSquarePiece(source, game.PieceBitboards)
-    if (movePiece === Pieces.K) {
-        game.CastlingRight = (game.CastlingRight & 0b1100)
-        ZobristHash = ZobristHash ^ MiscellaneousKey[0] ^ MiscellaneousKey[1]
-    } else if (movePiece === Pieces.k) {
-        game.CastlingRight = (game.CastlingRight & 0b0011)
-        ZobristHash = ZobristHash ^ MiscellaneousKey[2] ^ MiscellaneousKey[3]
-    } else if (movePiece === Pieces.R) {
-        if (source === 63n && (game.CastlingRight & CastlingRights.WhiteKing)) {
-            game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteKing
-            ZobristHash = ZobristHash ^ MiscellaneousKey[0]
-        } else if (source === 56n && (game.CastlingRight & CastlingRights.WhiteQueen)) {
-            game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteQueen
-            ZobristHash = ZobristHash ^ MiscellaneousKey[1]
+    if (game.CastlingRight & 0b0011) {
+        if (movePiece === Pieces.K) {
+            game.CastlingRight &= 0b1100
+            if (game.CastlingRight & CastlingRights.WhiteKing) {
+                ZobristHash = ZobristHash ^ MiscellaneousKey[0]
+            }
+            if (game.CastlingRight & CastlingRights.WhiteQueen) {
+                ZobristHash = ZobristHash ^ MiscellaneousKey[1]
+            }
         }
-    } else if (movePiece === Pieces.r) {
-        if (source === 7n && (game.CastlingRight & CastlingRights.BlackKing)) {
-            game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackKing
-            ZobristHash = ZobristHash ^ MiscellaneousKey[2]
-        } else if (source === 0n && (game.CastlingRight & CastlingRights.BlackQueen)) {
-            game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackQueen
-            ZobristHash = ZobristHash ^ MiscellaneousKey[3]
+        else if (movePiece === Pieces.R) {
+            if (source === 63n && (game.CastlingRight & CastlingRights.WhiteKing)) {
+                game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteKing
+                ZobristHash = ZobristHash ^ MiscellaneousKey[0]
+            } else if (source === 56n && (game.CastlingRight & CastlingRights.WhiteQueen)) {
+                game.CastlingRight = game.CastlingRight & ~CastlingRights.WhiteQueen
+                ZobristHash = ZobristHash ^ MiscellaneousKey[1]
+            }
+        }
+    }
+    if (game.CastlingRight & 0b1100) {
+        if (movePiece === Pieces.k) {
+            game.CastlingRight &= 0b0011
+            if (game.CastlingRight & CastlingRights.BlackKing) {
+                ZobristHash = ZobristHash ^ MiscellaneousKey[2]
+            }
+            if (game.CastlingRight & CastlingRights.BlackQueen) {
+                ZobristHash = ZobristHash ^ MiscellaneousKey[3]
+            }
+        }
+        else if (movePiece === Pieces.r) {
+            if (source === 7n && (game.CastlingRight & CastlingRights.BlackKing)) {
+                game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackKing
+                ZobristHash = ZobristHash ^ MiscellaneousKey[2]
+            } else if (source === 0n && (game.CastlingRight & CastlingRights.BlackQueen)) {
+                game.CastlingRight = game.CastlingRight & ~CastlingRights.BlackQueen
+                ZobristHash = ZobristHash ^ MiscellaneousKey[3]
+            }
         }
     }
     if (flag === MoveFlags.capture || flag === MoveFlags.queen_promo_capture ||

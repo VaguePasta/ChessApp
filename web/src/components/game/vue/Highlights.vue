@@ -1,5 +1,5 @@
 <script setup>
-import {ref, watch} from "vue";
+import {ref} from "vue";
 const props = defineProps(['side', 'position'])
 const left = ref(!props.side ? (props.position % 8) * 12.5 + '%' : 87.5 - (props.position % 8) * 12.5 + '%')
 const top = ref(!props.side ? Math.floor(props.position / 8) * 12.5 + '%' : 87.5 - Math.floor(props.position / 8) * 12.5 + '%')
