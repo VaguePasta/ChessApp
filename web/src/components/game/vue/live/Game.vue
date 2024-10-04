@@ -1,89 +1,94 @@
 <script setup>
-import {onBeforeMount, ref} from "vue";
-  import {websocket} from "@/connection/websocket.js";
-  import Board from "@/components/game/vue/board/Board.vue";
-  import {useRouter} from "vue-router";
-  import {ExtractSideToMove} from "@/components/game/js/FEN.js";
-  import {GetNotation} from "@/components/game/js/Moves.js";
-  import Players from "@/components/game/vue/live/Players.vue";
-  const result = ref(null)
-  const connectionLost = ref(null)
-  const legalMoves = ref([])
-  const props = defineProps(['pos', 'bot', 'opponent', 'elo'])
-  const router = useRouter()
-  const information = atob(props.pos)
-  const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
-  const sounds = ref([
-    new Audio("/assets/sounds/win.mp3"),
-    new Audio("/assets/sounds/lose.mp3"),
-    new Audio("/assets/sounds/draw.mp3"),
-  ])
-  onBeforeMount(() => {
-    if (!websocket) router.push("/dashboard")
-    else {
-      websocket.addEventListener('close', lostConnection)
-      if (parseInt(information[information.length - 1]) === sideToMove.value) {
-        websocket.onmessage = (msg) => {
-          legalMoves.value = new Uint16Array([0, ...new Uint16Array(msg.data)])
-          defineOnMessage()
-        }
-      } else {
+import {onBeforeMount, ref, watch} from "vue";
+import {websocket} from "@/connection/websocket.js";
+import Board from "@/components/game/vue/board/Board.vue";
+import {useRouter} from "vue-router";
+import {ExtractSideToMove, FENStart} from "@/components/game/js/FEN.js";
+import {GetNotation} from "@/components/game/js/Moves.js";
+import Players from "@/components/game/vue/live/Players.vue";
+const result = ref(null)
+const connectionLost = ref(null)
+const legalMoves = ref([])
+const props = defineProps(['pos', 'bot', 'opponent', 'elo'])
+const router = useRouter()
+const information = atob(props.pos)
+const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
+const sounds = ref([
+  new Audio("/assets/sounds/win.mp3"),
+  new Audio("/assets/sounds/lose.mp3"),
+  new Audio("/assets/sounds/draw.mp3"),
+])
+onBeforeMount(() => {
+  if (!websocket) router.push("/dashboard")
+  else {
+    websocket.addEventListener('close', lostConnection)
+    if (parseInt(information[information.length - 1]) === sideToMove.value) {
+      websocket.onmessage = (msg) => {
+        legalMoves.value = new Uint16Array([0, ...new Uint16Array(msg.data)])
         defineOnMessage()
       }
-      websocket.send("ok")
+    } else {
+      defineOnMessage()
     }
-  })
-  function defineOnMessage() {
-    websocket.onmessage = (msg) => {
-      if (typeof msg.data === "string") {
-        websocket.removeEventListener('close', lostConnection)
-        if (msg.data === "The other player has lost connection.") {
-          connectionLost.value = msg.data
-          return
-        }
-        result.value = msg.data.toString()
-        if (parseInt(information[information.length - 1]) === sideToMove.value) sideToMove.value = 1 - sideToMove.value
-        if (msg.data.toString() === "You won.") {
-          sounds.value[0].play()
-        } else if (msg.data.toString() === "You lost.") {
-          sounds.value[1].play()
-        } else {
-          sounds.value[2].play()
-        }
+    websocket.send("ok")
+  }
+})
+function defineOnMessage() {
+  websocket.onmessage = (msg) => {
+    if (typeof msg.data === "string") {
+      websocket.removeEventListener('close', lostConnection)
+      if (msg.data === "The other player has lost connection.") {
+        connectionLost.value = msg.data
+        return
       }
-      else {
-        if (sideToMove.value !== parseInt(information[information.length - 1])) {
-          let _moves = new Uint16Array(msg.data)
-          legalMoves.value = _moves
-          moves.value.push(GetNotation(_moves[0]))
-        }
+      result.value = msg.data.toString()
+      if (parseInt(information[information.length - 1]) === sideToMove.value) sideToMove.value = 1 - sideToMove.value
+      if (msg.data.toString() === "You won.") {
+        sounds.value[0].play()
+      } else if (msg.data.toString() === "You lost.") {
+        sounds.value[1].play()
+      } else {
+        sounds.value[2].play()
       }
     }
+    else {
+      if (sideToMove.value !== parseInt(information[information.length - 1])) {
+        let _moves = new Uint16Array(msg.data)
+        legalMoves.value = _moves
+        moves.value.push(GetNotation(_moves[0]))
+      }
+    }
   }
-  function lostConnection() {
-    connectionLost.value = "Connection lost."
-  }
-  function returnToMenu() {
-    router.push({path : "/dashboard"})
-  }
-  function ChangeSide() {
-    sideToMove.value = 1 - sideToMove.value
-  }
-  function SendMove(move) {
-    moves.value.push(GetNotation(move))
-    websocket.send(move)
-  }
-  const moves = ref([])
-  function Resign() {
-    websocket.send("Resign")
-  }
+}
+function lostConnection() {
+  connectionLost.value = "Connection lost."
+}
+function returnToMenu() {
+  router.push({path : "/dashboard"})
+}
+function ChangeSide() {
+  sideToMove.value = 1 - sideToMove.value
+}
+function SendMove(move) {
+  moves.value.push(GetNotation(move))
+  websocket.send(move)
+}
+const moves = ref([])
+function Resign() {
+  websocket.send("Resign")
+}
+const list = ref(null)
+const move_ref = ref(null)
+watch(move_ref, () => {
+  list.value.scrollTop = move_ref.value[move_ref.value.length - 1].offsetTop
+}, {deep: true})
 </script>
 
 <template>
   <div class="general">
     <Players @resign="Resign" :sideToMove="sideToMove" :opponent="props.opponent" :side="parseInt(information.slice(-1))" :bot="props.bot" :elo="props.elo"/>
   <div class="general-board">
-    <Board @make-move="SendMove" @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
+    <Board @make-move="SendMove" @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="FENStart" :legalMoves="legalMoves"/>
     <div v-if="result" class="end-popup">
       <div style="font-size: 3.2vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>

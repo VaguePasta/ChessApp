@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from "./App.vue";
 import Dashboard from "@/components/dashboard/Dashboard.vue";
 import Game from "@/components/game/vue/live/Game.vue";
+import Puzzle from "@/components/game/vue/puzzle/Puzzle.vue";
 import {createRouter, createWebHistory} from "vue-router";
 import Login from "@/components/auth/Login.vue";
 import {ConnectToServer} from "@/connection/connections.js";
@@ -11,10 +12,11 @@ const routes = [
     { path: '/dashboard', component: Dashboard},
     { path: '/', component: Login},
     { path: '/replay', component: Replayer, props: route => ({id: route.query.id})},
+    { path: '/puzzle', component: Puzzle, props: route => ({fen: atob(route.query.f), moves: atob(route.query.m)})},
     { path: '/:pathMatch(.*)*', redirect: "/"}
 ]
 const router = createRouter({
     history: createWebHistory(),
     routes,
 })
-ConnectToServer().then(() => createApp(App).use(router).mount('#app'))
+ConnectToServer(true).then(() => createApp(App).use(router).mount('#app'))

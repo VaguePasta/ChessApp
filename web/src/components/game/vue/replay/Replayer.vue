@@ -84,14 +84,17 @@ function ProcessEvaluation(evaluation, side) {
         }
         if (winDiff <= 10) {
           mistake.value = "#56b4e9"
+          if (!moves.value[current_move_index.value - 1].endsWith("!?")) moves.value[current_move_index.value - 1] += "!?"
           evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Inaccuracy. "
               + bestmoves[current_best_move] + " was best.\n"
         } else if (winDiff <= 15) {
           mistake.value = "#e69f00"
+          if (!moves.value[current_move_index.value - 1].endsWith("?")) moves.value[current_move_index.value - 1] += "?"
           evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Mistake. "
               + bestmoves[current_best_move] + " was best.\n"
         } else {
           mistake.value = "#df5353"
+          if (!moves.value[current_move_index.value - 1].endsWith("??")) moves.value[current_move_index.value - 1] += "??"
           evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Blunder. "
               + bestmoves[current_best_move] + " was best.\n"
         }
@@ -100,12 +103,16 @@ function ProcessEvaluation(evaluation, side) {
     else if (previous && winDiff >= 5 && current_best_move) {
       current_best_move--
     }
+    else if (!previous && winDiff <= -5) {
+      mistake.value = "#26c2a3"
+      if (!moves.value[current_move_index.value - 1].endsWith("!!")) moves.value[current_move_index.value - 1] += "!!"
+      evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Brilliant."
+    }
     rating.value[side] = winRate
     rating.value[1 - side] = 100 - winRate
   }
   else if (!previous) {
     evaluations.value[1 - side] += Math.ceil(current_move_index.value / 2) + ". " + moves.value[current_move_index.value - 1] + ": Mate in " + Math.abs(evaluation[1]) + ".\n"
-
   }
 }
 onMounted(() => {

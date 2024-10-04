@@ -1,5 +1,5 @@
 <script setup>
-import {ConnectToServer, server, SessionID, Username} from "@/connection/connections.js";
+import {ConnectToServer, server, SessionID, User} from "@/connection/connections.js";
 import {Replays, SetReplays} from "@/components/dashboard/replays.js";
 import {onBeforeMount, onMounted, onUnmounted, ref} from "vue";
 import {useRouter} from "vue-router";
@@ -44,7 +44,7 @@ function GetList() {
         })
       })
     } else {
-      await ConnectToServer()
+      await ConnectToServer(false)
       if (!SessionID) await router.push("/")
       else GetList()
     }
@@ -77,13 +77,13 @@ function HoverRecord(e) {
 function SetStyle(win_side, white_side) {
   if (win_side === 'draw') return 'color: gray'
   else if (win_side === 'white') {
-    if (white_side === Username) {
+    if (white_side === User.username) {
       return 'color: limegreen'
     }
     else return 'color: orangered'
   }
   else if (win_side === 'black') {
-    if (white_side !== Username) {
+    if (white_side !== User.username) {
       return 'color: limegreen'
     }
     else return 'color: orangered'
@@ -110,31 +110,102 @@ function Replay(game_id) {
           router.push({path: "/replay", query: {id: game_id}})
         })
       }
+      else {
+        ConnectToServer(false).then(() => {
+          if (SessionID)
+            Replay(game_id)
+          else router.push("/")
+        })
+      }
     })
   }
+}
+function MatchInfo(game) {
+  let str = ""
+  if (game.win_side !== "draw") {
+    switch (game.win_side) {
+      case 'white':
+        if (game.white_player === User.username) str += "Won by "
+        else str += "Lost by "
+        break
+      case 'black':
+        if (game.black_player === User.username) str += "Won by "
+        else str += "Lost by "
+        break
+    }
+  }
+  else str += "Drew by "
+  switch(game.result) {
+    case 'check':
+      str += "checkmate."
+      break
+    case 'resign':
+      str += "resignation."
+      break
+    case '50':
+      str += "50 moves rule."
+      break
+    case '3':
+      str += "threefold repetitions."
+      break
+    case 'mats':
+      str += "insufficient material."
+      break
+    case 'stalemate':
+      str = "Stalemate."
+  }
+  return str
 }
 </script>
 
 <template>
-  <div style="display: flex; width: 33.33%; min-height: 100%; flex-direction: column;">
-    <button @click="GetList">Get</button>
-    <div style="font-family: gilroy-medium, sans-serif; color: white">Games played:</div>
+  <div class="outer">
+    <div class="top-tag">
+      Past games:<button class="reload-games" @click="GetList"/>
+    </div>
     <div class="game-list">
       <div @mousemove="HoverRecord" class="game-record" v-for="(game, index) in list" @click="Replay(game.game_id)" :key="game.game_id" :style="SetStyle(game.win_side, game.white_player)">
         <div style="max-width: 40%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block; pointer-events: none; user-select: none">
         {{game.white_player ? game.white_player : 'BOT'}} vs {{game.black_player ? game.black_player : 'BOT'}}
         </div>
-        <div style="float: right; pointer-events: none; user-select: none">
+        <div style="float: right; pointer-events: none; user-select: none; color: lightgray">
         {{times[index]}}
         </div>
+        <div>{{MatchInfo(game)}}</div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+@import "styles/UI.css";
+.top-tag {
+  font-family: gilroy-medium, sans-serif;
+  color: white;
+  width: 100%;
+  overflow: scroll;
+  scrollbar-width: none;
+  padding: 1% 2% 0 1%;
+  text-align: center;
+  box-sizing: border-box;
+  height: fit-content;
+}
+.reload-games {
+  background-image: url("/assets/images/flip.svg");
+  background-repeat: no-repeat;
+  background-size: 100%;
+  aspect-ratio: 1/1;
+  background-color: #1e2327;
+  height: 30px;
+  float: right;
+  border: 2px solid #ad8463;
+  border-radius: 5px;
+}
+.reload-games:hover {
+  background-color: #ad965e;
+}
 .game-list {
-  height: 60%;
+  flex: 1;
   width: 100%;
   overflow-y: scroll;
   font-family: gilroy-regular, sans-serif;
@@ -143,7 +214,7 @@ function Replay(game_id) {
 }
 .game-record {
   padding: 2%;
-  margin: 1px;
+  margin: 1%;
   border-radius: 10px;
   border: 1px solid #ad8463;
   background-color: #1e2327;

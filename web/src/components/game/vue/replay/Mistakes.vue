@@ -18,7 +18,7 @@ watch(props, (prop) => {
 
 <template>
   <div style="width: 100%; height: 100%; position: absolute; left: 0; top: 0;">
-    <div v-if="props.mistake" class="mistaken">{{props.mistake === '#56b4e9' ? '?!' : (props.mistake === '#e69f00' ? '?' : '??')}}</div>
+    <div v-if="props.mistake" class="mistaken">{{props.mistake === '#56b4e9' ? '?!' : (props.mistake === '#e69f00' ? '?' : (props.mistake === '#26c2a3' ? '!!' : '??'))}}</div>
   </div>
 </template>
 

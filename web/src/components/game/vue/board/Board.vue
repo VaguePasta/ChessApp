@@ -375,7 +375,7 @@ function PieceCapture(square) {
     CapturedPieces.value.push(pieces.value.get(piece))
 }
 defineExpose({
-  UnmakeMove
+  UnmakeMove, pieces, FindPiece
 })
 </script>
 

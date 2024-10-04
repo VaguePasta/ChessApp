@@ -1,6 +1,6 @@
 <script setup>
 import {ref} from "vue";
-import {ConnectToServer, SessionID, SetSessionID} from "@/connection/connections.js";
+import {ConnectToServer, server, SessionID, SetSessionID} from "@/connection/connections.js";
 import {websocket, WebSocketConnect} from "@/connection/websocket.js";
 import {useRouter} from "vue-router";
 import ChooseBot from "@/components/dashboard/ChooseBot.vue";
@@ -13,7 +13,7 @@ function FindMatch() {
   WebSocketConnect("match/" + SessionID)
   finding.value = true
   websocket.onclose = async () => {
-    await ConnectToServer()
+    await ConnectToServer(false)
     if (!SessionID) {
       finding.value = false
       await router.push("/")
@@ -67,7 +67,7 @@ function NewBotMatch(side, elo, type) {
   WebSocketConnect("bot/" + SessionID + "/" + side.toString() + "/" + elo + "/" + type)
   websocket.onclose = async () => {
     SetSessionID(null)
-    await ConnectToServer()
+    await ConnectToServer(false)
     if (!SessionID) {
       await router.push("/")
     } else NewBotMatch(side, elo, type)
@@ -95,6 +95,30 @@ function HoverFindMatch(e) {
       + ((e.clientY - rect.y)/rect.height * 100).toFixed(0)
       + "%, #ad965e 0, #1e2327 150%)"
 }
+function PlayPuzzle() {
+  fetch(server + "puzzle", {
+    method: "GET",
+    headers: {
+      'Authorization': SessionID,
+    },
+    credentials: 'omit'
+  }).then(res => {
+      if (!res.ok) {
+        ConnectToServer().then(() => {
+          if (!SessionID) router.push("/")
+          else PlayPuzzle()
+        })
+      }
+      else {
+        res.json().then((json) => {
+          router.push({
+            path: "/puzzle",
+            query: {f: btoa(json.fen), m: btoa(json.moves)}
+          })
+        })
+      }
+  })
+}
 </script>
 
 <template>
@@ -117,9 +141,10 @@ function HoverFindMatch(e) {
     <div style="padding: 5px">Waiting for opponent...</div>
     <button @click="QuitWaiting" class="pick-button">Quit waiting.</button>
   </div>
-  <div style="display: flex; width: 33.33%; height: 100%; align-items: center; flex-direction: column">
+  <div class="outer">
     <button @mousemove="HoverFindMatch" class="find-match" @click="FindMatch">Find match</button>
     <button @mousemove="HoverFindMatch" class="find-match" @click="choosing = true">Practice against computer</button>
+    <button @mousemove="HoverFindMatch" class="find-match" @click="PlayPuzzle">Practice with puzzles</button>
   </div>
   <div @click="choosing=false;" v-if="choosing" class="new-mask"/>
   <ChooseBot @new-bot-match="NewBotMatch" v-if="choosing"/>
@@ -149,7 +174,7 @@ function HoverFindMatch(e) {
   margin: 5%;
   padding: 5%;
   font-size: 20px;
-  border-radius: 3vh;
+  border-radius: 15px;
   font-family: gilroy-bold, sans-serif;
   border: 2px solid #b1a27f;
   overflow: clip;

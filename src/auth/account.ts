@@ -46,7 +46,7 @@ export async function AutoLogin(verification: string): Promise<string|null> {
         Websocket: null,
         LastUsed: Date.now(),
     })
-    return JSON.stringify([token, row[0].username])
+    return token
 }
 export async function Register(username: string, password: string): Promise<boolean> {
     let hashedPassword = await bcrypt.hash(password, saltRounds)
@@ -57,6 +57,16 @@ export async function LogOut(verification: string): Promise<boolean> {
     if (!verification) return false
     const result = await DatabaseConn`delete from auth_tokens where selector=${verification.slice(0, 24)}`
     return result.count !== 0;
+}
+export async function GetUser(token: string): Promise<string|null> {
+    let user = Active_sessions.get(token)
+    if (!user) {
+        return null
+    }
+    else {
+        let data = await DatabaseConn`select win, draw, loss, join_date from users where user_id=${user.Userid}`
+        return JSON.stringify([user.Username, data[0].win, data[0].draw, data[0].loss, data[0].join_date])
+    }
 }
 export interface Account {
     Userid: number,

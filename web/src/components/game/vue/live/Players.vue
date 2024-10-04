@@ -1,6 +1,6 @@
 <script setup>
 import {ref, watch} from "vue";
-import {Username} from "@/connection/connections.js";
+import {User} from "@/connection/connections.js";
 const resigning = ref(false)
 const props = defineProps(['opponent', 'side', 'bot', 'elo', 'sideToMove'])
 const emit = defineEmits(['resign'])
@@ -17,7 +17,7 @@ function Resign() {
     </div>
     <div class="player">
       <button :disabled="props.sideToMove !== props.side" @click="resigning = true" class="resign-button">Resign</button>
-      <div style="margin-top: auto">{{Username}}</div>
+      <div style="margin-top: auto">{{User.username}}</div>
     </div>
     <div class="resign-popup" v-if="resigning">Are you sure you want to resign?
       <div style="margin-top: 4%; width: 50%; align-self: center; display: flex; justify-content: space-evenly">

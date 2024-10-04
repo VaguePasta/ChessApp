@@ -4,10 +4,11 @@
   import {ConnectToServer, server, SessionID, SetSessionID} from "@/connection/connections.js";
   import NewGame from "@/components/dashboard/NewGame.vue";
   import Analyze from "@/components/dashboard/Analyze.vue";
+  import User from "@/components/dashboard/User.vue";
   const router = useRouter()
   onBeforeMount(async () => {
     if (!SessionID) {
-      await ConnectToServer()
+      await ConnectToServer(true)
       if (!SessionID) await router.push("/")
     }
   })
@@ -27,11 +28,9 @@
 
 <template>
   <div style="display: flex; min-width: 100%; min-height: 100%">
-    <Analyze/>
+    <User/>
     <NewGame/>
-    <div style="display: flex; width: 33.33%; height: 100%;">
-      <button @click="Logout">Log out</button>
-    </div>
+    <Analyze/>
   </div>
 </template>
 

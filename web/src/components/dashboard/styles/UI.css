@@ -40,3 +40,10 @@
     border-radius: 5px;
     color: white;
 }
+.outer {
+    display: flex;
+    width: 33.33%;
+    min-height: 100%;
+    flex-direction: column;
+    align-items: center;
+}

@@ -3,11 +3,18 @@
 </script>
 
 <template>
-  <div style="width: 100%; height: 100%; background-color: #525561;">
+  <div class="app">
     <RouterView/>
   </div>
 </template>
 
 <style scoped>
-
+.app {
+  width: 100%;
+  height: 100%;
+  background-color: #525561;
+  overflow: scroll;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
 </style>

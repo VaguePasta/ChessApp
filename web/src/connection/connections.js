@@ -4,12 +4,18 @@ export let SessionID = null
 export function SetSessionID(id) {
     SessionID = id
 }
-export let Username = null
-export function SetUsername(username) {
-    Username = username
+export let User = null
+export function SetUser(info) {
+    User = {
+        username: info[0],
+        win: info[1],
+        draw: info[2],
+        loss: info[3],
+        joined: info[4]
+    }
 }
 
-export async function ConnectToServer() {
+export async function ConnectToServer(fetchInfo) {
     SetSessionID(null)
     let res = await fetch(server + 'auth', {
         method: 'POST',
@@ -22,9 +28,20 @@ export async function ConnectToServer() {
         })
     })
     if (res.ok) {
-        let text = await res.text()
-        let infos = JSON.parse(text)
-        SetSessionID(infos[0])
-        SetUsername(infos[1])
+        SetSessionID(await res.text())
+        if (fetchInfo) await GetAccountInfo()
+    }
+}
+export async function GetAccountInfo() {
+    let res = await fetch(server + 'user', {
+        method: 'GET',
+        headers: {
+            'Authorization': SessionID
+        },
+        credentials: 'omit'
+    })
+    if (res.ok) {
+        let info = JSON.parse(await res.text())
+        SetUser(info)
     }
 }
