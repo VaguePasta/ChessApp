@@ -73,7 +73,7 @@ watch(props.information, (newPosition) => {
 </template>
 
 <style scoped>
-@import "../styles/pieces.css";
+@import "../../styles/pieces.css";
 @keyframes Move {
   from {
     left: v-bind(oldLeft);

@@ -132,8 +132,8 @@ export function ConnectToLobby(ws: any, token: any, sessionId: string): boolean 
             Lobby.delete(token)
         }
         else {
-            lobby.Player1.Websocket.send("ok")
-            lobby.Player2.Websocket.send("ok")
+            lobby.Player1.Websocket.send("ok" + lobby.Player2.Username)
+            lobby.Player2.Websocket.send("ok" + lobby.Player1.Username)
             Lobby.delete(token)
             lobby.Player1.Websocket.removeAllListeners()
             lobby.Player2.Websocket.removeAllListeners()

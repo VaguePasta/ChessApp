@@ -1,10 +1,24 @@
 <script setup>
-import {server, SessionID, Username} from "@/connection/connections.js";
+import {ConnectToServer, server, SessionID, Username} from "@/connection/connections.js";
 import {Replays, SetReplays} from "@/components/dashboard/replays.js";
-import {ref} from "vue";
+import {onBeforeMount, onMounted, onUnmounted, ref} from "vue";
 import {useRouter} from "vue-router";
+import TimeAgo from 'javascript-time-ago'
+import en from 'javascript-time-ago/locale/en'
 const router = useRouter()
 const list = ref(Replays)
+const times = ref([])
+TimeAgo.addLocale(en)
+const timeAgo = new TimeAgo("en-GB")
+const timeouts = []
+onBeforeMount(() => {
+  Replays.forEach((value, index) => {
+    let formatted = timeAgo.format(Date.parse(value.date), {getTimeToNextUpdate: true})
+    times.value.push(formatted[0])
+    timeouts.push(setTimeout(() => ResetTimeout(index), Math.min(formatted[1], 2147483647)))
+  })
+})
+onMounted(GetList)
 function GetList() {
   fetch(server + "records", {
     method: 'GET',
@@ -13,15 +27,40 @@ function GetList() {
       'Content-Type': 'application/json'
     },
     credentials: 'omit'
-  }).then((res) => {
+  }).then(async (res) => {
     if (res.ok) {
       res.json().then((json) => {
         SetReplays(json)
         list.value = Replays
+        times.value.length = 0
+        timeouts.forEach(value => {
+          clearTimeout(value)
+        })
+        timeouts.length = 0
+        Replays.forEach((value, index) => {
+          let formatted = timeAgo.format(Date.parse(value.date), {getTimeToNextUpdate: true})
+          times.value.push(formatted[0])
+          timeouts.push(setTimeout(() => ResetTimeout(index), Math.min(formatted[1], 2147483647)))
+        })
       })
+    } else {
+      await ConnectToServer()
+      if (!SessionID) await router.push("/")
+      else GetList()
     }
   })
 }
+function ResetTimeout(index) {
+  let formatted = timeAgo.format(Date.parse(Replays[index].date), {getTimeToNextUpdate: true})
+  times.value[index] = formatted[0]
+  timeouts[index] = setTimeout(() => ResetTimeout(index), Math.min(formatted[1], 2147483647))
+}
+onUnmounted(() => {
+  timeouts.forEach(value => {
+    clearTimeout(value)
+  })
+  timeouts.length = 0
+})
 const hover = ref("")
 const active = ref("")
 function HoverRecord(e) {
@@ -81,12 +120,12 @@ function Replay(game_id) {
     <button @click="GetList">Get</button>
     <div style="font-family: gilroy-medium, sans-serif; color: white">Games played:</div>
     <div class="game-list">
-      <div @mousemove="HoverRecord" class="game-record" v-for="game in list" @click="Replay(game.game_id)" :key="game.game_id" :style="SetStyle(game.win_side, game.white_player)">
+      <div @mousemove="HoverRecord" class="game-record" v-for="(game, index) in list" @click="Replay(game.game_id)" :key="game.game_id" :style="SetStyle(game.win_side, game.white_player)">
         <div style="max-width: 40%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: inline-block; pointer-events: none; user-select: none">
         {{game.white_player ? game.white_player : 'BOT'}} vs {{game.black_player ? game.black_player : 'BOT'}}
         </div>
         <div style="float: right; pointer-events: none; user-select: none">
-        {{new Date(game.date).toLocaleDateString("en-GB", {hour: "numeric", minute: "numeric", second: "numeric"})}}
+        {{times[index]}}
         </div>
       </div>
     </div>

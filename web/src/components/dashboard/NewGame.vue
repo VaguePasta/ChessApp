@@ -13,7 +13,6 @@ function FindMatch() {
   WebSocketConnect("match/" + SessionID)
   finding.value = true
   websocket.onclose = async () => {
-    SetSessionID(null)
     await ConnectToServer()
     if (!SessionID) {
       finding.value = false
@@ -32,10 +31,11 @@ function AcceptMatch() {
     waiting.value = true
   }
   websocket.onmessage = (ok) => {
-    if (ok.data === "ok") {
+    let message = ok.data.toString()
+    if (message.startsWith("ok")) {
       websocket.onmessage = (config) => {
         finding.value = false
-        router.push({path: "/game", query: {p: config.data, b: 0}})
+        router.push({path: "/game", query: {p: config.data, b: 0, o: message.slice(2)}})
       }
     }
     else if (ok.data === "Match cancelled.") {
@@ -73,10 +73,11 @@ function NewBotMatch(side, elo, type) {
     } else NewBotMatch(side, elo, type)
   }
   websocket.onmessage = (ok) => {
-    if (ok.data === "ok") {
+    let message = ok.data.toString()
+    if (message.startsWith("ok")) {
       choosing.value = false
       websocket.onmessage = (config) => {
-        router.push({path: "/game", query: {p: config.data, b: 1}})
+        router.push({path: "/game", query: {p: config.data, b: 1, o: message.slice(2), e: elo}})
       }
     }
   }
@@ -125,7 +126,7 @@ function HoverFindMatch(e) {
 </template>
 
 <style scoped>
-@import "UI.css";
+@import "styles/UI.css";
 .pick-button:hover {
   background: v-bind(hover);
 }

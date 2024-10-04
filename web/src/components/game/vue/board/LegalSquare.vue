@@ -1,6 +1,6 @@
 <script setup>
   import {ref} from "vue";
-  import {GetTargetSquare, GetMoveFlag} from "../js/Moves";
+  import {GetTargetSquare, GetMoveFlag} from "../../js/Moves.js";
   const props = defineProps(['move', 'side'])
   let flag = GetMoveFlag(props.move)
   let isCapture = flag === 4 || flag === 12 || flag === 13 || flag === 14 || flag === 15

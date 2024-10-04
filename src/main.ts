@@ -71,16 +71,21 @@ app.post('/logout', (req, res) => {
 app.get('/records', (req, res) => {
     let token = req.header('authorization')
     if (!token) {
-        res.end(401)
+        res.status(401)
+        res.end()
         return
     }
     let user = Active_sessions.get(token)
     if (!user) {
-        res.end(401)
+        res.status(401)
+        res.end()
         return
     }
     GetRecordList(user.Userid).then((result) => {
-        if (!result) res.end(404)
+        if (!result) {
+            res.status(404)
+            res.end()
+        }
         else {
             user.LastUsed = Date.now()
             res.end(result)

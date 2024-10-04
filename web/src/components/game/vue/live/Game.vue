@@ -1,13 +1,15 @@
 <script setup>
 import {onBeforeMount, ref} from "vue";
   import {websocket} from "@/connection/websocket.js";
-  import Board from "@/components/game/vue/Board.vue";
+  import Board from "@/components/game/vue/board/Board.vue";
   import {useRouter} from "vue-router";
   import {ExtractSideToMove} from "@/components/game/js/FEN.js";
+  import {GetNotation} from "@/components/game/js/Moves.js";
+  import Players from "@/components/game/vue/live/Players.vue";
   const result = ref(null)
   const connectionLost = ref(null)
   const legalMoves = ref([])
-  const props = defineProps(['pos', 'bot'])
+  const props = defineProps(['pos', 'bot', 'opponent', 'elo'])
   const router = useRouter()
   const information = atob(props.pos)
   const sideToMove = ref(ExtractSideToMove(information.slice(0, -1)))
@@ -51,7 +53,9 @@ import {onBeforeMount, ref} from "vue";
       }
       else {
         if (sideToMove.value !== parseInt(information[information.length - 1])) {
-          legalMoves.value = new Uint16Array(msg.data)
+          let _moves = new Uint16Array(msg.data)
+          legalMoves.value = _moves
+          moves.value.push(GetNotation(_moves[0]))
         }
       }
     }
@@ -65,11 +69,21 @@ import {onBeforeMount, ref} from "vue";
   function ChangeSide() {
     sideToMove.value = 1 - sideToMove.value
   }
+  function SendMove(move) {
+    moves.value.push(GetNotation(move))
+    websocket.send(move)
+  }
+  const moves = ref([])
+  function Resign() {
+    websocket.send("Resign")
+  }
 </script>
 
 <template>
-  <div style="position: absolute; aspect-ratio: 1/1; height: 90%; left: 50%; top: 50%; transform: translate(-50%, -50%)">
-    <Board @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
+  <div class="general">
+    <Players @resign="Resign" :sideToMove="sideToMove" :opponent="props.opponent" :side="parseInt(information.slice(-1))" :bot="props.bot" :elo="props.elo"/>
+  <div class="general-board">
+    <Board @make-move="SendMove" @change-side="ChangeSide" :side="parseInt(information.slice(-1))" :sideToMove="sideToMove" :pos="information.slice(0, -1)" :legalMoves="legalMoves"/>
     <div v-if="result" class="end-popup">
       <div style="font-size: 3.2vh; padding-bottom: 1vh;">The game has concluded.</div>
       <div style="font-size: 3vh; padding-bottom: 1vh;">{{result}}</div>
@@ -81,9 +95,14 @@ import {onBeforeMount, ref} from "vue";
       <button @click="returnToMenu" class="end-button">Back to main menu.</button>
     </div>
   </div>
+    <div ref="list" class="move-list" style="width: 25%; height: 100%">
+      <div class="move" v-for="(move, index) in moves" ref="move_ref" :class="index === moves.length - 1 ? 'current-move' : ''">{{!(index % 2) ? index/2 + 1 + ". ": ""}}{{move}}</div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
+@import "../../styles/UI.css";
 .end-button {
   background-color: #81b64c;
   border: none;

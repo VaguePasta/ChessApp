@@ -11,6 +11,7 @@
   "dependencies": {
     "chart.js": "^4.4.4",
     "events": "^3.3.0",
+    "javascript-time-ago": "^2.5.11",
     "vue": "^3.4.37",
     "vue-chartjs": "^5.3.1",
     "vue-router": "^4.4.3"

@@ -44,7 +44,7 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
         opponent.stdin.write("setoption name Personality value " + personality + "\n")
         opponent.stdin.write("position startpos\n")
     })
-    connection.send("ok")
+    connection.send("ok" + personality)
     connection.send(btoa(FENStart + match.Players[0].Side))
     connection.removeAllListeners()
     connection.on('alive', (ws: CustomWebSocket) => {
@@ -88,7 +88,12 @@ export function StartBotMatch(match: Match | undefined, personality: string, elo
             }
             connection.on('message', (data: any) => {
                 if (game.GameState.SideToMove === match.Players[0].Side) {
-                    if (ProcessMove(parseInt(data), game, positions, connection, match)) {
+                    if (data.toString() === "Resign") {
+                        connection.send("Lost by resignation.")
+                        SaveGame(match, 1 - match.Players[0].Side, 'resign')
+                        connection.close()
+                    }
+                    else if (ProcessMove(parseInt(data), game, positions, connection, match)) {
                         GetResponse(opponent, depth, positions)
                     }
                 }
@@ -123,27 +128,27 @@ function ProcessMove(move: number, game: Game, positions: {position: string}, co
             positions.position += GenMoveString(move) + " "
             return 1
         case 1:
-            SaveGame(match, match.Players[0].Side ? -1 : 1)
+            SaveGame(match, match.Players[0].Side ? -1 : 1, 'check')
             connection.send("You won.")
             connection.close()
             return 0
         case 2:
-            SaveGame(match, 0)
+            SaveGame(match, 0, 'stalemate')
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
-            SaveGame(match, 0)
+            SaveGame(match, 0, '50')
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
-            SaveGame(match, 0)
+            SaveGame(match, 0, '3')
             connection.send("Draw by threefold repetition.")
             connection.close()
             return 0
         case 5:
-            SaveGame(match, 0)
+            SaveGame(match, 0, 'mats')
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
@@ -160,44 +165,44 @@ function ProcessBotMove(move: number, game: Game, connection: any, match: Match)
             legalMoves[0] = move
             return legalMoves
         case 1:
-            SaveGame(match, match.Players[0].Side ? 1 : -1)
+            SaveGame(match, match.Players[0].Side ? 1 : -1, 'check')
             connection.send(new Uint16Array([move]))
             connection.send("You lost.")
             connection.close()
             return 0
         case 2:
-            SaveGame(match, 0)
+            SaveGame(match, 0, 'stalemate')
             connection.send(new Uint16Array([move]))
             connection.send("Stalemate.")
             connection.close()
             return 0
         case 3:
-            SaveGame(match, 0)
+            SaveGame(match, 0, '50')
             connection.send(new Uint16Array([move]))
             connection.send("Draw by 50-move rule.")
             connection.close()
             return 0
         case 4:
-            SaveGame(match, 0)
+            SaveGame(match, 0, '3')
             connection.send(new Uint16Array([move]))
             connection.send("Draw by threefold repetition.")
             connection.close()
 
             return 0
         case 5:
-            SaveGame(match, 0)
+            SaveGame(match, 0, 'mats')
             connection.send(new Uint16Array([move]))
             connection.send("Draw by insufficient material.")
             connection.close()
             return 0
     }
 }
-async function SaveGame(match: Match, winSide: number) {
+async function SaveGame(match: Match, winSide: number, matchResult: string) {
     let winner = winSide ? (winSide === 1 ? 'white' : 'black') : 'draw'
     if (!match.Players[0].Side)
-        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side) values (${match.Players[0].Userid}, null, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner})`
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side, result) values (${match.Players[0].Userid}, null, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner}, ${matchResult})`
     else
-        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side) values (null, ${match.Players[0].Userid}, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner})`
+        await DatabaseConn`insert into game_records(white_player, black_player, moves, date_added, win_side, result) values (null, ${match.Players[0].Userid}, ${CompressMatch(match.Moves)}, localtimestamp(0), ${winner}, ${matchResult})`
 }
 function AlgebraicToMove(algebraic: string, legalMoveList: MoveList): number {
     let source = AlgebraicToIndex(algebraic.slice(0, 2))

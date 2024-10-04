@@ -1,16 +1,16 @@
 <script setup>
 import {onBeforeMount, onBeforeUnmount, onMounted, ref} from "vue";
-import Board from "@/components/game/vue/Board.vue";
+import Board from "@/components/game/vue/board/Board.vue";
 import {FENStart} from "@/components/game/js/FEN.js";
 import {GetNotation} from "@/components/game/js/Moves.js";
 import {Replays} from "@/components/dashboard/replays.js";
 import {useRouter} from "vue-router";
 import {SessionID} from "@/connection/connections.js";
-import Rating from "@/components/replay/Rating.vue";
-import {ExtractCP, Base64ToUint16} from "@/components/replay/engine.js";
-import Mistakes from "@/components/replay/Mistakes.vue";
-import Evaluations from "@/components/replay/Evaluations.vue";
-import Chart from "@/components/replay/Chart.vue";
+import Rating from "@/components/game/vue/replay/Rating.vue";
+import {ExtractCP, Base64ToUint16} from "@/components/game/js/engine.js";
+import Mistakes from "@/components/game/vue/replay/Mistakes.vue";
+import Evaluations from "@/components/game/vue/replay/Evaluations.vue";
+import Chart from "@/components/game/vue/replay/Chart.vue";
 const router = useRouter()
 let evaler
 const props = defineProps(['id'])
@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="analyze">
+  <div class="general">
     <div class="match-info">
         <div class="match-eval">
           <div class="eval-box" style="border-bottom: 5px groove white">
@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
         </div>
         <Rating :key="sideToView" :side="sideToView" :rating="rating" :analyzed="analyze_complete"/>
     </div>
-    <div class="analyze-board">
+    <div class="general-board">
     <Board ref="board_ref" @change-side="ChangeSide" :side="sideToView" :side-to-move="sideToMove" :pos="FENStart" :legalMoves="current_move"/>
     <Mistakes :mistake="mistake" :position="current_move[0]" :side="sideToView" :key="sideToView"/>
   </div>
@@ -242,38 +242,8 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@import "../dashboard/UI.css";
-.analyze {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  width: 100%;
-  height: 95%;
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-}
-.move-list {
-  height: 90%;
-  overflow-y: scroll;
-  color: white;
-  background-color: #082c3a;
-  scrollbar-width: thin;
-  width: 100%;
-  flex-shrink: none;
-  font-family: gilroy-regular, sans-serif;
-}
-.move {
-  padding: 2%;
-  border-style: none;
-  box-sizing: border-box;
-  width: 50%;
-  display: inline-block;
-}
-.current-move {
-  background-color: #3d576e;
-}
+@import "../../../dashboard/styles/UI.css";
+@import "../../styles/UI.css";
 .buttons {
   background-color: #1e2327;
   border: 1px solid black;
@@ -367,13 +337,5 @@ onBeforeUnmount(() => {
   width: 100%;
   background-color: #082c3a;
   box-sizing: border-box
-}
-.analyze-board {
-  position: relative;
-  left: 0;
-  top: 0;
-  height: 100%;
-  aspect-ratio: 1/1;
-  display: inline-block
 }
 </style>

@@ -125,7 +125,7 @@ function ChooseBot(botType) {
 </template>
 
 <style scoped>
-@import "UI.css";
+@import "styles/UI.css";
 @font-face {
   font-family: gilroy-regular;
   src:url("/assets/fonts/Gilroy-Regular.ttf");

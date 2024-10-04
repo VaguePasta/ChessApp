@@ -1,12 +1,11 @@
 <script setup>
 import Piece from "./Piece.vue";
 import {onBeforeMount, onMounted, ref, watch} from "vue";
-import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "../js/Moves.js";
-import {websocket} from "@/connection/websocket.js";
-import LegalSquare from "@/components/game/vue/LegalSquare.vue";
-import CoordinatesY from "@/components/game/vue/CoordinatesY.vue";
-import CoordinatesX from "@/components/game/vue/CoordinatesX.vue";
-import Highlights from "@/components/game/vue/Highlights.vue";
+import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "../../js/Moves.js";
+import LegalSquare from "@/components/game/vue/board/LegalSquare.vue";
+import CoordinatesY from "@/components/game/vue/board/CoordinatesY.vue";
+import CoordinatesX from "@/components/game/vue/board/CoordinatesX.vue";
+import Highlights from "@/components/game/vue/board/Highlights.vue";
 import {ParseFEN} from "@/components/game/js/FEN.js";
 let sounds
 onBeforeMount(() => {
@@ -172,7 +171,7 @@ function PlayerMove(event) {
 function SendMove(move, check) {
   let send_move = Move(move, check)
   if (send_move) {
-    websocket.send(send_move)
+    emit('make-move', send_move)
   }
 }
 watch(() => props.legalMoves, () => {
@@ -180,7 +179,7 @@ watch(() => props.legalMoves, () => {
     Move(props.legalMoves[0], false)
   }
 }, {deep:true})
-const emit = defineEmits(['change-side'])
+const emit = defineEmits(['change-side', 'make-move'])
 function ProcessMove(move, pieceKey) {
   let targetSquare = GetTargetSquare(move)
   let flag = GetMoveFlag(move)
@@ -406,7 +405,7 @@ defineExpose({
 </template>
 
 <style scoped>
-@import "../styles/pieces.css";
+@import "../../styles/pieces.css";
 .board {
   background-image: url("/assets/board/board.svg");
   margin: 0;

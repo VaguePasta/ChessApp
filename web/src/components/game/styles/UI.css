@@ -1,0 +1,39 @@
+.general {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 95%;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+}
+.general-board {
+    position: relative;
+    left: 0;
+    top: 0;
+    height: 100%;
+    aspect-ratio: 1/1;
+    display: inline-block
+}
+.move {
+    padding: 2%;
+    border-style: none;
+    box-sizing: border-box;
+    width: 50%;
+    display: inline-block;
+}
+.current-move {
+    background-color: #3d576e;
+}
+.move-list {
+    height: 90%;
+    overflow-y: scroll;
+    color: white;
+    background-color: #082c3a;
+    scrollbar-width: thin;
+    width: 100%;
+    flex-shrink: 0;
+    font-family: gilroy-regular, sans-serif;
+}

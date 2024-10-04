@@ -11,9 +11,14 @@ export function ExtractCP(response) {
 }
 export function Base64ToUint16(base64) {
     let binaryString = atob(base64);
-    let bytes = new Uint8Array(binaryString.length);
+    let bytes = new Uint8Array(binaryString.length)
     for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+        bytes[i] = binaryString.charCodeAt(i)
+    }
+    if (bytes.length % 2) {
+        let newBytes = new Uint8Array(bytes.length + 1)
+        newBytes.set(bytes, 1)
+        bytes = newBytes
     }
     let uint16 = new Uint16Array(bytes.length / 2)
     let counter = 0
