@@ -1,38 +1,87 @@
 <script setup>
-import {onBeforeMount, onMounted, ref} from "vue";
+import {onBeforeMount, onMounted, ref, watch} from "vue";
 import {SessionID} from "@/connection/connections.js";
 import {useRouter} from "vue-router";
 import {ExtractSideToMove} from "@/components/game/js/FEN.js";
 import Board from "@/components/game/vue/board/Board.vue";
 import {AlgebraicToIndex} from "@/components/game/js/Notation.js";
+import {PlayPuzzle} from "@/components/game/js/Puzzle.js";
+import {GetNotation} from "@/components/game/js/Moves.js";
 const router = useRouter()
-const props = defineProps(['fen', 'moves'])
+const props = defineProps(['fen', 'moves', 'rating'])
 const sideToMove = ref(ExtractSideToMove(props.fen))
-const side = 1 - sideToMove.value
+const side = ref(1 - sideToMove.value)
 const legalMoves = ref([])
 const board = ref(null)
-const moves = props.moves.split(" ")
+let MoveGenerator
+let moves = props.moves.split(" ")
+let isPlaying = false
 let find = null
+let str = ""
+let current_move = 0
+let tmp_moves = []
+let previousTarget = -1
+let previousSource = -1
+const result = ref(0)
+const retry = ref(1)
 onBeforeMount(() => {
   if (!SessionID) router.push("/")
+  MoveGenerator = new Worker("assets/scripts/stockfish-nnue-16.js")
+  NewBoard()
 })
+function NewBoard() {
+  MoveGenerator.onmessage = e => {
+    if (e.data.toString() === "uciok") {
+      StartPuzzle()
+      MoveGenerator.onmessage = e => {
+        let input = e.data.toString()
+        if (input !== "" && !input.startsWith("Node")) tmp_moves.push(UCItoBinary(input.slice(0, input.indexOf(":")), board.value.pieces, find))
+        else if (input.startsWith("Node")) {
+          setTimeout(() => {
+            legalMoves.value = tmp_moves
+            current_move++
+          }, 700)
+        }
+      }
+    }
+  }
+  MoveGenerator.postMessage('uci')
+}
+function StartPuzzle() {
+  str = "position fen " + props.fen + " moves " + moves[0]
+  tmp_moves = [UCItoBinary(moves[0], board.value.pieces, find, true)]
+  MoveGenerator.postMessage(str)
+  MoveGenerator.postMessage('go perft 1')
+}
 onMounted(() => {
   find = board.value.FindPiece
 })
 function Move(move) {
-  console.log(move)
+  if (moves[current_move] !== GetNotation(move)) {
+    result.value = -1
+    return
+  }
+  if (current_move === moves.length - 1) {
+    result.value = 1
+    return
+  }
+  current_move++
+  tmp_moves = [UCItoBinary(moves[current_move], board.value.pieces, find, true)]
+  str += " " + moves[current_move - 1] + " " + moves[current_move]
+  MoveGenerator.postMessage(str)
+  MoveGenerator.postMessage('go perft 1')
 }
 function ChangeSide() {
   sideToMove.value = 1 - sideToMove.value
 }
-function UCItoBinary(uci_move, pieces, find) {
+function UCItoBinary(uci_move, pieces, find, setTarget=false) {
   let startSquare = AlgebraicToIndex(uci_move.slice(0, 2))
   let targetSquare = AlgebraicToIndex(uci_move.slice(2, 4))
   let promotion = uci_move.length === 5 ? uci_move[uci_move.length - 1] : null
   let movedPiece = pieces.get(find(startSquare))
   let flag = 0
-  if (uci_move === "e1g1" || uci_move === "e8g8") flag = 2
-  else if (uci_move === "e1c1" || uci_move === "e8c8") flag = 3
+  if ((uci_move === "e1g1" || uci_move === "e8g8") && (movedPiece.Piece[1] === 5 || movedPiece.Piece[1] === 13)) flag = 2
+  else if ((uci_move === "e1c1" || uci_move === "e8c8") && (movedPiece.Piece[1] === 5 || movedPiece.Piece[1] === 13)) flag = 3
   else if (!(movedPiece.Piece[1] % 8)) {
     if (!promotion) {
       if (Math.abs(targetSquare - startSquare) === 16) flag = 1
@@ -47,7 +96,11 @@ function UCItoBinary(uci_move, pieces, find) {
       else flag = GetPromotion(promotion, true)
     }
   }
-  else if (find(targetSquare) !== -1) flag = 4
+  else if ((find(targetSquare) !== -1 && targetSquare !== previousSource) || previousTarget === targetSquare) flag = 4
+  if (setTarget) {
+    previousSource = startSquare
+    previousTarget = targetSquare
+  }
   return startSquare | targetSquare << 6 | flag << 12
 }
 function GetPromotion(promotion, isCapture) {
@@ -62,29 +115,84 @@ function GetPromotion(promotion, isCapture) {
       return isCapture ? 15 : 11
   }
 }
-onMounted(() => {
+function PlaySolution() {
+  if (isPlaying) return
+  Reset(result.value)
+  retry.value = 0
+  sideToMove.value = ExtractSideToMove(props.fen)
+  board.value.Restart()
+  isPlaying = true
   for (let i = 1; i <= moves.length; i++) {
     setTimeout( () => {
       legalMoves.value = [UCItoBinary(moves[i-1], board.value.pieces, find)]
-    }, 1000*i)
+      if (i === moves.length) isPlaying = false
+    }, 1200*i)
   }
+}
+function Reset(_result=0) {
+  sideToMove.value = ExtractSideToMove(props.fen)
+  side.value = 1 - sideToMove.value
+  moves = props.moves.split(" ")
+  str = ""
+  current_move = 0
+  previousTarget = -1
+  previousSource = -1
+  result.value = _result
+  retry.value = 1
+}
+function Retry() {
+  if (isPlaying) return
+  Reset()
+  board.value.Restart()
+  NewBoard()
+}
+function NextPuzzle() {
+  if (isPlaying) return
+  PlayPuzzle()
+}
+watch(props, () => {
+  Reset()
+  board.value.Restart()
+  NewBoard()
 })
 </script>
 
 <template>
-  <div class="board-container">
-    <Board ref="board" @make-move="Move" @change-side="ChangeSide" :side="side" :sideToMove="sideToMove" :pos="fen" :legalMoves="legalMoves"/>
+  <div class="general">
+    <div class="puzzle-info">Puzzle rating: {{props.rating}}
+      <div style="color: forestgreen" v-if="result===1">Puzzle solved.</div>
+      <div style="color: indianred" v-if="result===-1">Puzzle failed.</div>
+      <div style="width: 70%; display: flex; justify-content: center">
+        <button style="width: 45%" v-if="result===-1" class="pick-button" @click="PlaySolution">Solution</button>
+        <button style="width: 45%" v-if="retry && result===-1" class="pick-button" @click="Retry">Retry</button>
+      </div>
+      <button class="pick-button" @click="NextPuzzle">Next puzzle</button>
+      <button class="pick-button" @click="router.push('/dashboard')">Quit</button>
+    </div>
+    <div class="general-board">
+      <Board ref="board" @make-move="Move" @change-side="ChangeSide" :side="side" :sideToMove="sideToMove" :pos="props.fen" :legalMoves="legalMoves"/>
+    </div>
+
   </div>
-  <button @click="router.push('/dashboard')">Quit</button>
 </template>
 
 <style scoped>
-.board-container {
-  position: absolute;
-  height: 90%;
-  aspect-ratio: 1/1;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+@import "../../styles/UI.css";
+@import "../../../dashboard/styles/UI.css";
+.puzzle-info {
+  width: 20%;
+  border-radius: 10%;
+  padding: 3% 1%;
+  display: flex;
+  flex-direction: column;
+  background-color: #082c3a;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  font-family: gilroy-bold, sans-serif;
+  font-size: 20px;
+}
+.pick-button:hover {
+  background-color: #ad8463;
 }
 </style>

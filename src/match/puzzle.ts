@@ -7,9 +7,10 @@ export async function GetPuzzle(req: any): Promise<string|null> {
         return null
     }
     let random_id = Math.floor(Math.random() * NumberOfPuzzles + 1)
-    const puzzle = await DatabaseConn`select fen, moves from puzzles where puzzle_id = ${random_id}`
+    const puzzle = await DatabaseConn`select fen, moves, rating from puzzles where puzzle_id = ${random_id}`
     return JSON.stringify({
         fen: puzzle[0].fen,
-        moves: puzzle[0].moves
+        moves: puzzle[0].moves,
+        rating: puzzle[0].rating,
     })
 }

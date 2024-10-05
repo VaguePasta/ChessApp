@@ -1,6 +1,20 @@
 <script setup>
 import {User} from "@/connection/connections.js";
 import Chart from "@/components/dashboard/Chart.vue";
+import {ref} from "vue";
+const hover = ref("")
+const active = ref("")
+function HoverFindMatch(e) {
+  let rect = e.target.getBoundingClientRect()
+  hover.value = "radial-gradient(circle at "
+      + ((e.clientX - rect.x)/rect.width * 100).toFixed(0) + "% "
+      + ((e.clientY - rect.y)/rect.height * 100).toFixed(0)
+      + "%, #ad965e, #1e2327)"
+  active.value = "radial-gradient(circle at " +
+      ((e.clientX - rect.x)/rect.width * 100).toFixed(0) + "% "
+      + ((e.clientY - rect.y)/rect.height * 100).toFixed(0)
+      + "%, #ad965e 0, #1e2327 150%)"
+}
 </script>
 
 <template>
@@ -16,12 +30,18 @@ import Chart from "@/components/dashboard/Chart.vue";
     <div class="user-chart-box">
       <Chart/>
     </div>
-    <button style="margin-top: auto" @click="Logout">Log out</button>
+    <button @mousemove="HoverFindMatch" class="pick-button" @click="Logout">Log out</button>
   </div>
 </template>
 
 <style scoped>
 @import "styles/UI.css";
+.pick-button:hover {
+  background: v-bind(hover);
+}
+.pick-button:active {
+  background: v-bind(active);
+}
 .user-chart-box {
   width: 80%;
   padding: 2% 0;

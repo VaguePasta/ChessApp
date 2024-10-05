@@ -1,9 +1,10 @@
 <script setup>
 import {ref} from "vue";
-import {ConnectToServer, server, SessionID, SetSessionID} from "@/connection/connections.js";
+import {ConnectToServer, SessionID, SetSessionID} from "@/connection/connections.js";
 import {websocket, WebSocketConnect} from "@/connection/websocket.js";
 import {useRouter} from "vue-router";
 import ChooseBot from "@/components/dashboard/ChooseBot.vue";
+import {PlayPuzzle} from "@/components/game/js/Puzzle.js";
 const finding = ref(false)
 const gameToken = ref(null)
 const waiting = ref(false)
@@ -94,30 +95,6 @@ function HoverFindMatch(e) {
       ((e.clientX - rect.x)/rect.width * 100).toFixed(0) + "% "
       + ((e.clientY - rect.y)/rect.height * 100).toFixed(0)
       + "%, #ad965e 0, #1e2327 150%)"
-}
-function PlayPuzzle() {
-  fetch(server + "puzzle", {
-    method: "GET",
-    headers: {
-      'Authorization': SessionID,
-    },
-    credentials: 'omit'
-  }).then(res => {
-      if (!res.ok) {
-        ConnectToServer().then(() => {
-          if (!SessionID) router.push("/")
-          else PlayPuzzle()
-        })
-      }
-      else {
-        res.json().then((json) => {
-          router.push({
-            path: "/puzzle",
-            query: {f: btoa(json.fen), m: btoa(json.moves)}
-          })
-        })
-      }
-  })
 }
 </script>
 

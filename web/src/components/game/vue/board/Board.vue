@@ -1,6 +1,6 @@
 <script setup>
 import Piece from "./Piece.vue";
-import {onBeforeMount, onMounted, ref, watch} from "vue";
+import {nextTick, onBeforeMount, onMounted, ref, watch} from "vue";
 import {GetMoveFlag, GetSourceSquare, GetTargetSquare, MakeMove} from "../../js/Moves.js";
 import LegalSquare from "@/components/game/vue/board/LegalSquare.vue";
 import CoordinatesY from "@/components/game/vue/board/CoordinatesY.vue";
@@ -26,6 +26,18 @@ const pieces = ref(null)
 onMounted(() => {
   pieces.value = ParseFEN(props.pos)
 })
+function Restart() {
+  movableSquare.value = []
+  selectingPiece.value = 0
+  promoting.value = false
+  pendingMove.value = 0
+  pieces.value.clear()
+  lastMoves.value = []
+  CapturedPieces.value = []
+  nextTick(() => {
+    pieces.value = ParseFEN(props.pos)
+  })
+}
 function MoveIsLegal(move) {
   if (props.side !== props.sideToMove) return move
   else {
@@ -375,7 +387,7 @@ function PieceCapture(square) {
     CapturedPieces.value.push(pieces.value.get(piece))
 }
 defineExpose({
-  UnmakeMove, pieces, FindPiece
+  UnmakeMove, pieces, FindPiece, Restart
 })
 </script>
 

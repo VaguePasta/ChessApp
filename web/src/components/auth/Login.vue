@@ -27,10 +27,10 @@ function SignIn(username, password, remember) {
     })
   }).then((res) => {
     if (res.ok) {
-      res.text().then((data) => {
+      res.text().then(async (data) => {
         SetSessionID(data)
-        GetAccountInfo()
-        router.push("/dashboard")
+        await GetAccountInfo()
+        await router.push("/dashboard")
       })
     }
     else loginFail.value = true
