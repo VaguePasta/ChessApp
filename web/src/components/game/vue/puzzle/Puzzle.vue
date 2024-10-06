@@ -43,7 +43,7 @@ function NewBoard() {
             legalMoves.value = tmp_moves
             moved.value.push(moves[current_move])
             current_move++
-          }, 700)
+          }, 500)
         }
       }
     }
@@ -56,6 +56,11 @@ function StartPuzzle() {
   MoveGenerator.postMessage(str)
   MoveGenerator.postMessage('go perft 1')
 }
+const moveContainer = ref(null)
+const movesMade = ref(null)
+watch(movesMade, () => {
+  if (movesMade.value.length) moveContainer.value.scrollTop = movesMade.value[movesMade.value.length - 1].offsetTop
+}, {deep: true})
 onMounted(() => {
   find = board.value.FindPiece
 })
@@ -94,7 +99,7 @@ function UCItoBinary(uci_move, pieces, find, setTarget=false) {
       if (Math.abs(targetSquare - startSquare) === 16) flag = 1
       else if (Math.abs(targetSquare - startSquare) === 8) flag = 0
       else {
-        if (find(targetSquare) !== -1) flag = 4
+        if (find(targetSquare) !== -1 || targetSquare === previousTarget) flag = 4
         else flag = 5
       }
     }
@@ -149,7 +154,7 @@ function PlaySolution() {
       moved.value.push(moves[i-1])
       current_move++
       if (i === moves.length) isPlaying = false
-    }, 1200*i)
+    }, 700*i)
   }
 }
 function Reset(_result=0) {
@@ -200,12 +205,11 @@ watch(props, () => {
       <Board ref="board" @make-move="Move" @change-side="ChangeSide" :side="side" :sideToMove="sideToMove" :pos="props.fen" :legalMoves="legalMoves"/>
     </div>
     <div class="side">
-      <div class="move-container">
+      <div ref="moveContainer" class="move-container">
         <div class="move" v-if="!side">...</div>
-        <div class="move" :class="(index === current_move-1) ? 'current-move': ''" v-for="(move, index) in moved">{{move}}</div>
+        <div ref="movesMade" class="move" :class="(index === current_move-1) ? 'current-move': ''" v-for="(move, index) in moved">{{move}}</div>
       </div>
       <div style="height: 80%" class="info-box">
-        <div style="font-family: gilroy-bold, sans-serif; font-size: 20px">Puzzle theme(s):</div>
         <Theme :themes="props.theme"/>
       </div>
     </div>
@@ -243,7 +247,7 @@ watch(props, () => {
 }
 .info-box {
   width: 100%;
-  height: 15%;
+  height: fit-content;
   margin-top: 2%;
   background-color: #082c3a;
   border-radius: 10px;
