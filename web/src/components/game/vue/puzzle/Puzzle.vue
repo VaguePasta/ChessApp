@@ -7,8 +7,9 @@ import Board from "@/components/game/vue/board/Board.vue";
 import {AlgebraicToIndex} from "@/components/game/js/Notation.js";
 import {PlayPuzzle} from "@/components/game/js/Puzzle.js";
 import {GetNotation} from "@/components/game/js/Moves.js";
+import Theme from "@/components/game/vue/puzzle/Theme.vue";
 const router = useRouter()
-const props = defineProps(['fen', 'moves', 'rating'])
+const props = defineProps(['fen', 'moves', 'rating','rating_deviation', 'theme'])
 const sideToMove = ref(ExtractSideToMove(props.fen))
 const side = ref(1 - sideToMove.value)
 const legalMoves = ref([])
@@ -24,6 +25,7 @@ let previousTarget = -1
 let previousSource = -1
 const result = ref(0)
 const retry = ref(1)
+const moved = ref([])
 onBeforeMount(() => {
   if (!SessionID) router.push("/")
   MoveGenerator = new Worker("assets/scripts/stockfish-nnue-16.js")
@@ -39,6 +41,7 @@ function NewBoard() {
         else if (input.startsWith("Node")) {
           setTimeout(() => {
             legalMoves.value = tmp_moves
+            moved.value.push(moves[current_move])
             current_move++
           }, 700)
         }
@@ -57,12 +60,16 @@ onMounted(() => {
   find = board.value.FindPiece
 })
 function Move(move) {
+  moved.value.push(GetNotation(move))
   if (moves[current_move] !== GetNotation(move)) {
-    result.value = -1
+    if (current_move === moves.length - 1) isCheckmate(move)
+    else result.value = -1
+    current_move++
     return
   }
   if (current_move === moves.length - 1) {
     result.value = 1
+    current_move++
     return
   }
   current_move++
@@ -103,6 +110,20 @@ function UCItoBinary(uci_move, pieces, find, setTarget=false) {
   }
   return startSquare | targetSquare << 6 | flag << 12
 }
+function isCheckmate(move) {
+  MoveGenerator.onmessage = e => {
+    let input = e.data.toString()
+    if (input.startsWith("Nodes")) {
+      if (input === "Nodes searched: 0") {
+        result.value = 1
+      } else {
+        result.value = -1
+      }
+    }
+  }
+  MoveGenerator.postMessage(str + " " + GetNotation(move))
+  MoveGenerator.postMessage("go perft 1")
+}
 function GetPromotion(promotion, isCapture) {
   switch (promotion) {
     case 'n':
@@ -125,6 +146,8 @@ function PlaySolution() {
   for (let i = 1; i <= moves.length; i++) {
     setTimeout( () => {
       legalMoves.value = [UCItoBinary(moves[i-1], board.value.pieces, find)]
+      moved.value.push(moves[i-1])
+      current_move++
       if (i === moves.length) isPlaying = false
     }, 1200*i)
   }
@@ -139,6 +162,7 @@ function Reset(_result=0) {
   previousSource = -1
   result.value = _result
   retry.value = 1
+  moved.value = []
 }
 function Retry() {
   if (isPlaying) return
@@ -159,20 +183,32 @@ watch(props, () => {
 
 <template>
   <div class="general">
-    <div class="puzzle-info">Puzzle rating: {{props.rating}}
-      <div style="color: forestgreen" v-if="result===1">Puzzle solved.</div>
-      <div style="color: indianred" v-if="result===-1">Puzzle failed.</div>
-      <div style="width: 70%; display: flex; justify-content: center">
-        <button style="width: 45%" v-if="result===-1" class="pick-button" @click="PlaySolution">Solution</button>
-        <button style="width: 45%" v-if="retry && result===-1" class="pick-button" @click="Retry">Retry</button>
+    <div class="side">
+      <div class="puzzle-info">Puzzle rating: {{props.rating}} ± {{props.rating_deviation}}
+        <div style="color: forestgreen" v-if="result===1">Puzzle solved.</div>
+        <div style="color: indianred" v-if="result===-1">Puzzle failed.</div>
+        <div style="width: 70%; display: flex; justify-content: center">
+          <button style="width: 45%" v-if="result===-1" class="pick-button" @click="PlaySolution">Solution</button>
+          <button style="width: 45%" v-if="retry && result===-1" class="pick-button" @click="Retry">Retry</button>
+        </div>
+        <button class="pick-button" @click="NextPuzzle">Next puzzle</button>
+        <button class="pick-button" @click="router.push('/dashboard')">Quit</button>
       </div>
-      <button class="pick-button" @click="NextPuzzle">Next puzzle</button>
-      <button class="pick-button" @click="router.push('/dashboard')">Quit</button>
+      <div class="info-box">All player moves are the only moves.  I.e. playing any other move would considerably worsen the player position, except for checkmates, which can happen with several different moves.</div>
     </div>
-    <div class="general-board">
+      <div class="general-board">
       <Board ref="board" @make-move="Move" @change-side="ChangeSide" :side="side" :sideToMove="sideToMove" :pos="props.fen" :legalMoves="legalMoves"/>
     </div>
-
+    <div class="side">
+      <div class="move-container">
+        <div class="move" v-if="!side">...</div>
+        <div class="move" :class="(index === current_move-1) ? 'current-move': ''" v-for="(move, index) in moved">{{move}}</div>
+      </div>
+      <div style="height: 80%" class="info-box">
+        <div style="font-family: gilroy-bold, sans-serif; font-size: 20px">Puzzle theme(s):</div>
+        <Theme :themes="props.theme"/>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -180,8 +216,8 @@ watch(props, () => {
 @import "../../styles/UI.css";
 @import "../../../dashboard/styles/UI.css";
 .puzzle-info {
-  width: 20%;
-  border-radius: 10%;
+  width: 100%;
+  border-radius: 12px;
   padding: 3% 1%;
   display: flex;
   flex-direction: column;
@@ -191,8 +227,40 @@ watch(props, () => {
   color: white;
   font-family: gilroy-bold, sans-serif;
   font-size: 20px;
+  box-sizing: border-box;
+  margin: auto 0;
 }
 .pick-button:hover {
   background-color: #ad8463;
+}
+.move-container {
+  width: 100%;
+  height: 20%;
+  border-radius: 10px;
+  background-color: #082c3a;
+  overflow: scroll;
+  scrollbar-width: none;
+}
+.info-box {
+  width: 100%;
+  height: 15%;
+  margin-top: 2%;
+  background-color: #082c3a;
+  border-radius: 10px;
+  padding: 2%;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 15px;
+  overflow: scroll;
+  scrollbar-width: none;
+}
+.side {
+  width: 20%;
+  height: 100%;
+  color: white;
+  font-family: gilroy-medium, sans-serif;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 </style>

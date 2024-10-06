@@ -12,7 +12,13 @@ const routes = [
     { path: '/dashboard', component: Dashboard},
     { path: '/', component: Login},
     { path: '/replay', component: Replayer, props: route => ({id: route.query.id})},
-    { path: '/puzzle', component: Puzzle, props: route => ({fen: atob(route.query.f), moves: atob(route.query.m), rating: route.query.r})},
+    { path: '/puzzle', component: Puzzle, props: route => ({
+            fen: route.query.f,
+            moves: atob(route.query.m),
+            rating: route.query.r,
+            rating_deviation: route.query.d,
+            theme: route.query.t}
+        )},
     { path: '/:pathMatch(.*)*', redirect: "/"}
 ]
 export const router = createRouter({

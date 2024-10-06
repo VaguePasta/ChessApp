@@ -1,6 +1,5 @@
 import {ConnectToServer, server, SessionID} from "@/connection/connections.js";
 import {router} from "@/main.js";
-
 export function PlayPuzzle() {
     fetch(server + "puzzle", {
         method: "GET",
@@ -19,7 +18,7 @@ export function PlayPuzzle() {
             res.json().then(async (json) => {
                 await router.push({
                     path: "/puzzle",
-                    query: {f: btoa(json.fen), m: btoa(json.moves), r: json.rating}
+                    query: {f: json.fen, m: btoa(json.moves), r: json.rating, d: json.rating_deviation, t: json.theme}
                 })
             })
         }
