@@ -457,8 +457,8 @@ defineExpose({
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  border: 1px solid black;
-  background-color: #ad8463
+  border: 2px solid black;
+  background-color: #e9ecef;
 }
 .promotion-button {
   background-repeat: no-repeat;
@@ -470,6 +470,6 @@ defineExpose({
   border: none;
 }
 .promotion-button:hover {
-  background-color: #52624b;
+  background-color: #a8b2bc;
 }
 </style>

@@ -5,6 +5,7 @@ const resigning = ref(false)
 const props = defineProps(['opponent', 'side', 'bot', 'elo', 'sideToMove'])
 const emit = defineEmits(['resign'])
 function Resign() {
+  resigning.value = false
   emit('resign')
 }
 </script>

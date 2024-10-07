@@ -259,6 +259,7 @@ onBeforeUnmount(() => {
   background-position: center;
   background-size: 25%;
   width: 33%;
+  border-radius: 14px;
 }
 .buttons:hover {
   background-color: gray;
@@ -272,6 +273,7 @@ onBeforeUnmount(() => {
   font-family: gilroy-medium, sans-serif;
   font-size: 25px;
   color: white;
+  border-radius: 15px;
 }
 .info-buttons {
   background-color: #727687;
@@ -291,6 +293,7 @@ onBeforeUnmount(() => {
   padding: 0 1.5%;
   border-left: 1px solid white;
   display: flex;
+  overflow: hidden;
 }
 .accuracy-image {
   height: 100%;
@@ -328,7 +331,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   flex-direction: column;
-  padding-top: 5px
+  padding-top: 5px;
 }
 .chart-and-moves {
   display: flex;
@@ -343,6 +346,7 @@ onBeforeUnmount(() => {
   display: block;
   width: 100%;
   background-color: #082c3a;
-  box-sizing: border-box
+  box-sizing: border-box;
+  border-radius: 14px;
 }
 </style>

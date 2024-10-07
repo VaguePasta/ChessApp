@@ -36,4 +36,5 @@
     width: 100%;
     flex-shrink: 0;
     font-family: gilroy-regular, sans-serif;
+    border-radius: 14px;
 }

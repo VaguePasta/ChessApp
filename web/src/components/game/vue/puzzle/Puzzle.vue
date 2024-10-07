@@ -154,7 +154,7 @@ function PlaySolution() {
       moved.value.push(moves[i-1])
       current_move++
       if (i === moves.length) isPlaying = false
-    }, 700*i)
+    }, 800*i)
   }
 }
 function Reset(_result=0) {
