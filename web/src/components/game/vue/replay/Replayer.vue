@@ -79,7 +79,7 @@ function ProcessEvaluation(evaluation, side) {
     let winRate = 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * evaluation[1])) - 1)
     let winDiff = winRate - rating.value[side]
     if (!previous && winDiff >= 5) {
-        if (bestmove) {
+        if (current_best_move === bestmoves.length) {
           bestmoves.push(bestmove)
         }
         if (winDiff <= 10) {
@@ -168,7 +168,6 @@ function PreviousMove() {
     evaluations.value[sideToMove.value] = evaluations.value[sideToMove.value].slice(0, previousEvaluation)
   }
   if (current_move_index.value - 1 >= 0) list.value.scrollTop = move_ref.value[current_move_index.value - 1].offsetTop - list_top.value.offsetTop
-  bestmove = null
   ProcessEvaluation(analyzed.value[current_move_index.value], sideToMove.value)
 }
 function Keypress(event) {
